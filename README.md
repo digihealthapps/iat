@@ -16,7 +16,7 @@ python scripts/summarize_race_iat_by_state.py path/to/Race.IAT.2024.sav
 
 On Python 3.9, install `pyreadstat==1.2.8`: newer versions need Python 3.10 or later.
 
-The script reads both race formats: the single-answer question in older files (`raceomb_002`) and the tick boxes in newer ones (`raceomb_003_white`, `raceomb_003_black`, …). With tick boxes, "White" and "Black" mean that was the only race selected. Where a file has block latencies (`Mn_RT_all_3/4/6/7` and `Order`), the output also includes average White+good and Black+good response times.
+The script reads both race formats: the single-answer question in older files (`raceomb_002`) and the tick boxes in newer ones (`raceomb_003_white`, `raceomb_003_black`, …). With tick boxes, "White" and "Black" mean that was the only race selected. In older files, where Hispanic ethnicity is a separate question (`ethnicityomb`), Hispanic respondents are left out of the White and Black groups so the definition matches. Where a file has block latencies (`Mn_RT_all_3/4/6/7` and `Order`), the output also includes average White+good and Black+good response times.
 
 Raw OSF files are not stored in this repository (they exceed GitHub's file size limits). Download them from Project Implicit's OSF page.
 

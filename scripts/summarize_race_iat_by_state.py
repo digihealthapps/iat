@@ -81,8 +81,9 @@ def pick(cols, candidates, override, what):
 def find_code(labels, word, override):
     if override is not None:
         return override
+    skip = ("non", "not ", "multi", "more than one", "mixed", "biracial")
     hits = [k for k, v in labels.items()
-            if word in str(v).lower() and "non" not in str(v).lower() and "multi" not in str(v).lower()]
+            if word in str(v).lower() and not any(x in str(v).lower() for x in skip)]
     return hits[0] if len(hits) == 1 else None
 
 
@@ -146,6 +147,12 @@ def main():
         else:
             race_col = pick(cols, RACE_CANDIDATES, a.race_col, "race")
             race_cols = [race_col]
+            # Hispanic is a separate question in these files; leave Hispanic respondents out of
+            # the White/Black groups so they match the tick-box definition ("only that race").
+            eth_col = "ethnicityomb" if "ethnicityomb" in cols else None
+            hisp = find_code(all_labels.get(eth_col, {}), "hispanic", None) if eth_col else None
+            if eth_col and hisp is not None:
+                race_cols = race_cols + [eth_col]
             labels = all_labels.get(race_col, {})
             black = find_code(labels, "black", a.black_code)
             white = find_code(labels, "white", a.white_code)
@@ -155,7 +162,8 @@ def main():
             if black is None or white is None:
                 sys.exit("  Couldn't tell which race codes mean Black and White. "
                          "Re-run with --black-code and --white-code using the codes listed above.")
-            print(f"  Using Black = {black}, White = {white}")
+            print(f"  Using Black = {black}, White = {white}"
+                  + (f"; excluding {eth_col} = {hisp} (Hispanic) from both" if eth_col and hisp is not None else ""))
 
         has_rt = all(c in cols for c in RT_COLS + [ORDER_COL])
         if has_rt:
@@ -189,6 +197,9 @@ def main():
             else:
                 race = pd.to_numeric(df[race_col], errors="coerce")
                 is_white, is_black = race == white, race == black
+                if eth_col and hisp is not None:
+                    not_hisp = pd.to_numeric(df[eth_col], errors="coerce") != hisp
+                    is_white, is_black = is_white & not_hisp, is_black & not_hisp
             cohorts = (("all", pd.Series(True, index=d.index)), ("black", is_black), ("white", is_white))
 
             if has_rt:
