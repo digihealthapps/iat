@@ -10,7 +10,11 @@ Setup (once):
 Usage (one or more files, .sav or .csv):
     python summarize_race_iat_by_state.py Race.IAT.2023.sav Race.IAT.2024.sav
 
-Output: state_cohort_iat.json in the current folder.
+Output: state_cohort_iat.json in the current folder. For each state (plus a
+"US" total) and each cohort (all, black, white) it records the respondent
+count, mean and SD of the D-score, a low-sample flag, and how many
+respondents fall in each D-score band (strong/moderate/slight pro-White,
+neutral, slight/moderate/strong pro-Black).
 """
 import argparse
 import json
@@ -19,6 +23,7 @@ import os
 import sys
 from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 
 STATES = set("""AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS
@@ -28,6 +33,23 @@ D_CANDIDATES = ["D_biep.White_Good_all", "D_biep.White_Good_36", "D_biep.White_G
 STATE_CANDIDATES = ["STATE", "state"]
 RACE_CANDIDATES = ["raceomb_002", "raceomb", "raceombmulti", "ethnicityomb"]
 CHUNK = 200_000
+
+# D-score bands, using the same cut-offs as the dashboard (0.15 / 0.35 / 0.65).
+# |D| <= 0.15 is neutral; beyond that, slight up to 0.35, moderate up to 0.65, strong above.
+BANDS = ["strong_white", "moderate_white", "slight_white", "neutral",
+         "slight_black", "moderate_black", "strong_black"]
+
+
+def band_of(d):
+    mag = d.abs()
+    white = d > 0
+    return pd.Series(np.select(
+        [mag <= 0.15,
+         white & (mag > 0.65), white & (mag > 0.35), white,
+         mag > 0.65, mag > 0.35],
+        ["neutral", "strong_white", "moderate_white", "slight_white",
+         "strong_black", "moderate_black"],
+        default="slight_black"), index=d.index)
 
 
 def pick(cols, candidates, override, what):
@@ -79,6 +101,8 @@ def main():
 
     # running sums per (state, cohort): n, sum, sum of squares
     acc = defaultdict(lambda: [0, 0.0, 0.0])
+    # respondent counts per (state, cohort) and D-score band
+    band_acc = defaultdict(lambda: dict.fromkeys(BANDS, 0))
     report = []
 
     for path in a.files:
@@ -108,21 +132,34 @@ def main():
             race = pd.to_numeric(df[race_col], errors="coerce")
             ok = st.isin(STATES) & d.between(-2, 2)
             d, st, race = d[ok], st[ok], race[ok]
+            band = band_of(d)
             kept += len(d)
             for cohort, mask in (("all", slice(None)), ("black", race == black), ("white", race == white)):
                 g = pd.DataFrame({"s": st[mask], "d": d[mask]}).groupby("s")["d"]
                 for s, n, sm, sq in zip(g.size().index, g.size(), g.sum(), (g.apply(lambda x: (x ** 2).sum()))):
                     cell = acc[(s, cohort)]
                     cell[0] += int(n); cell[1] += float(sm); cell[2] += float(sq)
+                counts = pd.DataFrame({"s": st[mask], "b": band[mask]}).groupby(["s", "b"]).size()
+                for (s, b), n in counts.items():
+                    band_acc[(s, cohort)][b] += int(n)
         report.append((os.path.basename(path), kept))
         print(f"  Kept {kept:,} completed sessions with a valid state and D-score")
 
-    out = {"source_files": [r[0] for r in report], "min_n": a.min_n, "states": {}}
+    # National ("US") totals: all states combined, per cohort
+    for (s, cohort), (n, sm, sq) in list(acc.items()):
+        us = acc[("US", cohort)]
+        us[0] += n; us[1] += sm; us[2] += sq
+        for b, c in band_acc[(s, cohort)].items():
+            band_acc[("US", cohort)][b] += c
+
+    out = {"source_files": [r[0] for r in report], "min_n": a.min_n,
+           "bands": BANDS, "states": {}}
     for (s, cohort), (n, sm, sq) in sorted(acc.items()):
         mean = sm / n
         sd = math.sqrt(max(sq / n - mean ** 2, 0))
         out["states"].setdefault(s, {})[cohort] = {
-            "n": n, "mean_d": round(mean, 4), "sd": round(sd, 4), "low_n": n < a.min_n}
+            "n": n, "mean_d": round(mean, 4), "sd": round(sd, 4), "low_n": n < a.min_n,
+            "band_counts": band_acc[(s, cohort)]}
     with open(a.out, "w") as f:
         json.dump(out, f, indent=1)
     print(f"\nDone. Wrote {a.out} ({os.path.getsize(a.out):,} bytes). Upload that file.")
