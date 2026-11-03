@@ -9,7 +9,8 @@ Each input file name must contain its year (e.g. y2019.json, y2002-2003.json;
 a range counts as its last year). The output has:
   - "states": the same per-state / per-cohort fields as the yearly files,
     pooled over the chosen years (every session weighted equally);
-  - "us_by_year": national mean D-score and respondent count per year and cohort.
+  - "us_by_year": national respondent count, mean D-score and mean explicit
+    preference per year and cohort.
 """
 import argparse
 import json
@@ -37,7 +38,7 @@ def main():
 
     # pooled sums per (state, cohort)
     pool = defaultdict(lambda: {"n": 0, "sum": 0.0, "sumsq": 0.0, "bands": defaultdict(int),
-                                "n_rt": 0, "w_sum": 0.0, "b_sum": 0.0})
+                                "n_rt": 0, "w_sum": 0.0, "b_sum": 0.0, "n_exp": 0, "exp_sum": 0.0})
     us_by_year = {}
     used, bands_order = [], None
 
@@ -45,7 +46,7 @@ def main():
         y = year_of(path)
         data = json.load(open(path))
         cells = data["states"]
-        us_by_year[str(y)] = {c: {"n": v["n"], "mean_d": v["mean_d"]}
+        us_by_year[str(y)] = {c: {k: v[k] for k in ("n", "mean_d", "n_explicit", "explicit_pref") if k in v}
                               for c, v in cells.get("US", {}).items()}
         if not (a.start <= y <= a.end):
             continue
@@ -60,6 +61,9 @@ def main():
                 p["sumsq"] += (sd ** 2 + mean ** 2) * n
                 for b, k in v.get("band_counts", {}).items():
                     p["bands"][b] += k
+                if v.get("n_explicit"):
+                    p["n_exp"] += v["n_explicit"]
+                    p["exp_sum"] += v["explicit_pref"] * v["n_explicit"]
                 if v.get("n_rt"):
                     p["n_rt"] += v["n_rt"]
                     p["w_sum"] += v["rt_white_good_ms"] * v["n_rt"]
@@ -74,6 +78,8 @@ def main():
                 "sd": round(math.sqrt(max(p["sumsq"] / n - mean ** 2, 0)), 4),
                 "low_n": n < a.min_n,
                 "band_counts": {b: p["bands"].get(b, 0) for b in (bands_order or p["bands"])}}
+        if p["n_exp"]:
+            cell.update({"n_explicit": p["n_exp"], "explicit_pref": round(p["exp_sum"] / p["n_exp"], 4)})
         if p["n_rt"]:
             cell.update({"n_rt": p["n_rt"],
                          "rt_white_good_ms": round(p["w_sum"] / p["n_rt"]),

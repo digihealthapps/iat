@@ -14,8 +14,11 @@ Output: state_cohort_iat.json in the current folder. For each state (plus a
 "US" total) and each cohort (all, black, white) it records the respondent
 count, mean and SD of the D-score, a low-sample flag, how many respondents
 fall in each D-score band (strong/moderate/slight pro-White, neutral,
-slight/moderate/strong pro-Black) and, where the file has block latencies,
-the average response time in the White+good and Black+good blocks.
+slight/moderate/strong pro-Black), where the file has block latencies the
+average response time in the White+good and Black+good blocks, and the mean
+self-reported preference ("explicit_pref") rescaled to -1 (strongly prefer
+African Americans) .. 0 (no preference) .. +1 (strongly prefer European
+Americans), so the 5-point (2002-2006) and 7-point versions share a scale.
 
 Cohorts: all, white, black, asian, hispanic.
   - white / black / asian: that race only, and not Hispanic.
@@ -53,6 +56,10 @@ RACE_CANDIDATES = ["raceomb_002", "raceomb002", "raceomb", "ethnic"]  # "ethnic"
 RACE_TICK_PREFIX = "raceomb_003_"   # one tick-box column per race, e.g. raceomb_003_white
 RT_COLS = ["Mn_RT_all_3", "Mn_RT_all_4", "Mn_RT_all_6", "Mn_RT_all_7"]
 ORDER_COL = "Order"
+# Self-reported preference ("Which statement best describes you?"), from strongly
+# prefer African Americans (1) to strongly prefer European Americans (5 or 7).
+# 2002-2006 use a 5-point version (att_5); later years a 7-point one (att_7, att7).
+EXPLICIT_COLS = ["att7", "att_7", "att_5"]
 RT_RANGE = (200, 10_000)  # ms; block means outside this are treated as invalid
 CHUNK = 200_000
 
@@ -100,6 +107,16 @@ def find_codes(labels, word):
     return [k for k, v in labels.items() if wanted(v)]
 
 
+def num(code):
+    """Codes are sometimes stored as text ("1" in 2022); compare them as numbers."""
+    if code is None:
+        return None
+    try:
+        return float(code)
+    except (TypeError, ValueError):
+        return code
+
+
 def find_code(labels, word, override):
     if override is not None:
         return override
@@ -145,6 +162,8 @@ def main():
     band_acc = defaultdict(lambda: dict.fromkeys(BANDS, 0))
     # response times per (state, cohort): n, sum White+good ms, sum Black+good ms
     rt_acc = defaultdict(lambda: [0, 0.0, 0.0])
+    # explicit preference per (state, cohort): n, sum of rescaled answers
+    exp_acc = defaultdict(lambda: [0, 0.0])
     report = []
 
     for path in a.files:
@@ -166,29 +185,35 @@ def main():
                 if all_labels.get(c):
                     print(f"  Codes for {c}: {all_labels[c]}")
         else:
-            race_col = pick(cols, RACE_CANDIDATES, a.race_col, "race")
-            race_cols = [race_col]
-            # Hispanic is a separate question in these files; leave Hispanic respondents out of
-            # the White/Black groups so they match the tick-box definition ("only that race").
+            # Some years switch race question mid-year (2006: "ethnic" then "raceomb";
+            # 2016: "raceomb" all year plus "raceomb_002" from September). Each respondent
+            # is classified by the first of these questions they actually answered.
+            race_names = [a.race_col] if a.race_col else [c for c in RACE_CANDIDATES if c in cols]
+            if not race_names:
+                pick(cols, RACE_CANDIDATES, None, "race")  # exits with the column list
+            # Hispanic (any race) from the separate ethnicity question, where it exists.
             eth_col = "ethnicityomb" if "ethnicityomb" in cols else None
-            hisp = find_code(all_labels.get(eth_col, {}), "hispanic", None) if eth_col else None
-            if eth_col and hisp is not None:
-                race_cols = race_cols + [eth_col]
-            labels = all_labels.get(race_col, {})
-            black = find_code(labels, "black", a.black_code)
-            white = find_code(labels, "white", a.white_code)
-            asian = find_codes(labels, "asian")
-            # Hispanic: from ethnicityomb where it exists, else from the combined 2002-2006 answer
-            hisp_in_race = find_code(labels, "hispanic", None) if not (eth_col and hisp is not None) else None
-            print(f"  Race: {race_col}")
-            if labels:
-                print("  Race codes in this file:", labels)
-            if black is None or white is None:
-                sys.exit("  Couldn't tell which race codes mean Black and White. "
-                         "Re-run with --black-code and --white-code using the codes listed above.")
-            print(f"  Using Black = {black}, White = {white}, Asian = {asian}; Hispanic = "
-                  + (f"{eth_col} = {hisp} (excluded from the race groups)" if eth_col and hisp is not None
-                     else f"{race_col} = {hisp_in_race}" if hisp_in_race is not None else "not available"))
+            hisp = num(find_code(all_labels.get(eth_col, {}), "hispanic", None)) if eth_col else None
+            if hisp is None:
+                eth_col = None
+            schemes = []
+            for col in race_names:
+                labels = all_labels.get(col, {})
+                sch = {"col": col,
+                       "black": num(find_code(labels, "black", a.black_code)),
+                       "white": num(find_code(labels, "white", a.white_code)),
+                       "asian": [num(c) for c in find_codes(labels, "asian")],
+                       "hisp": num(find_code(labels, "hispanic", None))}  # 2002-2006 combined answer
+                print(f"  Race: {col}" + (f"  codes: {labels}" if labels else ""))
+                if sch["black"] is None or sch["white"] is None:
+                    sys.exit(f"  Couldn't tell which {col} codes mean Black and White. "
+                             "Re-run with --race-col, --black-code and --white-code.")
+                print(f"    Using Black = {sch['black']:g}, White = {sch['white']:g}, "
+                      f"Asian = {[f'{c:g}' for c in sch['asian']]}, Hispanic = "
+                      + (f"{sch['hisp']:g}" if sch["hisp"] is not None else
+                         f"{eth_col} = {hisp:g}" if eth_col else "not available"))
+                schemes.append(sch)
+            race_cols = race_names + ([eth_col] if eth_col else [])
 
         has_rt = all(c in cols for c in RT_COLS + [ORDER_COL])
         if has_rt:
@@ -197,10 +222,23 @@ def main():
         else:
             print("  Response times: block latency columns not found; skipping")
 
+        explicit = []  # (column, number of scale points)
+        for c in EXPLICIT_COLS:
+            if c not in cols:
+                continue
+            lab = {num(k): str(v).lower() for k, v in all_labels.get(c, {}).items()}
+            k = int(max(lab)) if lab else None
+            if k in (5, 7) and "african" in lab.get(1.0, "") and "european" in lab.get(float(k), ""):
+                explicit.append((c, k))
+            else:
+                print(f"  Explicit: skipping {c} (unexpected labels: {all_labels.get(c)})")
+        print("  Explicit preference: " + (", ".join(f"{c} ({k}-point)" for c, k in explicit) or "not found"))
+
         # A session counts when it has a D-score: only participants who completed the IAT
         # blocks have one (OSF readme). session_status is not used, because its codes
         # change between years (2025 marks nearly every session "R", not "C").
-        usecols = [d_col, st_col] + race_cols + (RT_COLS + [ORDER_COL] if has_rt else [])
+        usecols = ([d_col, st_col] + race_cols + (RT_COLS + [ORDER_COL] if has_rt else [])
+                   + [c for c, _ in explicit])
         # Per Order code: how often "later blocks slower" agrees with D > 0, and
         # per (state, cohort, order): n, sum of early-block ms, sum of late-block ms.
         order_votes = defaultdict(lambda: [0, 0])
@@ -221,15 +259,29 @@ def main():
                 is_white, is_black, is_asian = only("white"), only("black"), only("asian")
                 is_hisp = ticked.get(f"{RACE_TICK_PREFIX}hispanic", pd.Series(False, index=df.index))
             else:
-                race = pd.to_numeric(df[race_col], errors="coerce")
-                is_white, is_black, is_asian = race == white, race == black, race.isin(asian)
-                if eth_col and hisp is not None:
-                    is_hisp = pd.to_numeric(df[eth_col], errors="coerce") == hisp
-                    is_white, is_black, is_asian = is_white & ~is_hisp, is_black & ~is_hisp, is_asian & ~is_hisp
-                elif hisp_in_race is not None:
-                    is_hisp = race == hisp_in_race
-                else:
-                    is_hisp = pd.Series(False, index=df.index)
+                none = pd.Series(False, index=df.index)
+                is_white, is_black, is_asian, is_hisp = none.copy(), none.copy(), none.copy(), none.copy()
+                if eth_col:
+                    is_hisp |= pd.to_numeric(df[eth_col], errors="coerce") == hisp
+                done = none.copy()
+                for sch in schemes:
+                    race = pd.to_numeric(df[sch["col"]], errors="coerce")
+                    rows = race.notna() & ~done
+                    is_white |= rows & (race == sch["white"])
+                    is_black |= rows & (race == sch["black"])
+                    is_asian |= rows & race.isin(sch["asian"])
+                    if sch["hisp"] is not None:
+                        is_hisp |= rows & (race == sch["hisp"])
+                    done |= rows
+                # race groups are "that race only, not Hispanic"
+                is_white, is_black, is_asian = is_white & ~is_hisp, is_black & ~is_hisp, is_asian & ~is_hisp
+            expl = pd.Series(np.nan, index=df.index)
+            for c, k in explicit:  # first column answered wins
+                mid = (k + 1) / 2
+                v = pd.to_numeric(df[c], errors="coerce")
+                v = v.where(v.between(1, k))
+                expl = expl.fillna((v - mid) / (mid - 1))
+
             cohorts = (("all", pd.Series(True, index=d.index)), ("black", is_black), ("white", is_white),
                        ("asian", is_asian), ("hispanic", is_hisp))
 
@@ -250,6 +302,11 @@ def main():
                 for s, n, sm, sq in zip(g.size().index, g.size(), g.sum(), (g.apply(lambda x: (x ** 2).sum()))):
                     cell = acc[(s, cohort)]
                     cell[0] += int(n); cell[1] += float(sm); cell[2] += float(sq)
+                if explicit:
+                    eg = pd.DataFrame({"s": st[mask], "e": expl[mask]}).dropna().groupby("s")["e"]
+                    for s, n, sm in zip(eg.size().index, eg.size(), eg.sum()):
+                        cell = exp_acc[(s, cohort)]
+                        cell[0] += int(n); cell[1] += float(sm)
                 counts = pd.DataFrame({"s": st[mask], "b": band[mask]}).groupby(["s", "b"]).size()
                 for (s, b), n in counts.items():
                     band_acc[(s, cohort)][b] += int(n)
@@ -293,6 +350,9 @@ def main():
         us[0] += n; us[1] += sm; us[2] += sq
         for b, c in band_acc[(s, cohort)].items():
             band_acc[("US", cohort)][b] += c
+    for (s, cohort), (n, sm) in list(exp_acc.items()):
+        us = exp_acc[("US", cohort)]
+        us[0] += n; us[1] += sm
     for (s, cohort), (n, w, b) in list(rt_acc.items()):
         us = rt_acc[("US", cohort)]
         us[0] += n; us[1] += w; us[2] += b
@@ -305,6 +365,9 @@ def main():
         out["states"].setdefault(s, {})[cohort] = {
             "n": n, "mean_d": round(mean, 4), "sd": round(sd, 4), "low_n": n < a.min_n,
             "band_counts": band_acc[(s, cohort)]}
+        en, esum = exp_acc.get((s, cohort), (0, 0))
+        if en:
+            out["states"][s][cohort].update({"n_explicit": en, "explicit_pref": round(esum / en, 4)})
         rn, w, b = rt_acc.get((s, cohort), (0, 0, 0))
         if rn:
             out["states"][s][cohort].update({
