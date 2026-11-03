@@ -42,7 +42,7 @@ MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY"""
 
 D_CANDIDATES = ["D_biep.White_Good_all", "D_biep.White_Good_36", "D_biep.White_Good_47"]
 STATE_CANDIDATES = ["STATE", "state"]
-RACE_CANDIDATES = ["raceomb_002", "raceomb", "ethnic"]  # "ethnic": 2002-2006 combined race/ethnicity
+RACE_CANDIDATES = ["raceomb_002", "raceomb002", "raceomb", "ethnic"]  # "ethnic": 2002-2006 combined race/ethnicity
 RACE_TICK_PREFIX = "raceomb_003_"   # one tick-box column per race, e.g. raceomb_003_white
 RT_COLS = ["Mn_RT_all_3", "Mn_RT_all_4", "Mn_RT_all_6", "Mn_RT_all_7"]
 ORDER_COL = "Order"
