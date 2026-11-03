@@ -42,7 +42,7 @@ MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY"""
 
 D_CANDIDATES = ["D_biep.White_Good_all", "D_biep.White_Good_36", "D_biep.White_Good_47"]
 STATE_CANDIDATES = ["STATE", "state"]
-RACE_CANDIDATES = ["raceomb_002", "raceomb"]
+RACE_CANDIDATES = ["raceomb_002", "raceomb", "ethnic"]  # "ethnic": 2002-2006 combined race/ethnicity
 RACE_TICK_PREFIX = "raceomb_003_"   # one tick-box column per race, e.g. raceomb_003_white
 RT_COLS = ["Mn_RT_all_3", "Mn_RT_all_4", "Mn_RT_all_6", "Mn_RT_all_7"]
 ORDER_COL = "Order"
@@ -81,9 +81,13 @@ def pick(cols, candidates, override, what):
 def find_code(labels, word, override):
     if override is not None:
         return override
-    skip = ("non", "not ", "multi", "more than one", "mixed", "biracial")
-    hits = [k for k, v in labels.items()
-            if word in str(v).lower() and not any(x in str(v).lower() for x in skip)]
+    # Skip multi-race answers and negations such as "Not Hispanic or Latino",
+    # but keep e.g. "White-Not of Hispanic Origin" (2002-2006 files).
+    skip = ("multi", "more than one", "mixed", "biracial")
+    def wanted(v):
+        v = str(v).lower().strip()
+        return word in v and not any(x in v for x in skip) and not v.startswith(("not ", "non"))
+    hits = [k for k, v in labels.items() if wanted(v)]
     return hits[0] if len(hits) == 1 else None
 
 
