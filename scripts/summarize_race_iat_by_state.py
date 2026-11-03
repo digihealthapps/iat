@@ -176,16 +176,16 @@ def main():
         else:
             print("  Response times: block latency columns not found; skipping")
 
-        usecols = ([d_col, st_col] + race_cols + (RT_COLS + [ORDER_COL] if has_rt else [])
-                   + (["session_status"] if "session_status" in cols else []))
+        # A session counts when it has a D-score: only participants who completed the IAT
+        # blocks have one (OSF readme). session_status is not used, because its codes
+        # change between years (2025 marks nearly every session "R", not "C").
+        usecols = [d_col, st_col] + race_cols + (RT_COLS + [ORDER_COL] if has_rt else [])
         # Per Order code: how often "later blocks slower" agrees with D > 0, and
         # per (state, cohort, order): n, sum of early-block ms, sum of late-block ms.
         order_votes = defaultdict(lambda: [0, 0])
         rt_raw = defaultdict(lambda: [0, 0.0, 0.0])
         kept = 0
         for df in iter_chunks(path, usecols):
-            if "session_status" in df:
-                df = df[df["session_status"].astype(str).str.upper().str.strip() == "C"]
             d = pd.to_numeric(df[d_col], errors="coerce")
             st = df[st_col].astype(str).str.strip().str.upper()
             ok = d.notna() & st.isin(STATES) & d.between(-2, 2)
@@ -210,7 +210,7 @@ def main():
                 rt = df[RT_COLS].apply(pd.to_numeric, errors="coerce")
                 order = pd.to_numeric(df[ORDER_COL], errors="coerce")
                 rt_ok = rt.notna().all(axis=1) & rt.ge(RT_RANGE[0]).all(axis=1) \
-                    & rt.le(RT_RANGE[1]).all(axis=1) & order.notna()
+                    & rt.le(RT_RANGE[1]).all(axis=1) & order.notna() & (order == order.round())  # whole-number codes only
                 early = (rt["Mn_RT_all_3"] + rt["Mn_RT_all_4"]) / 2   # blocks 3 & 4
                 late = (rt["Mn_RT_all_6"] + rt["Mn_RT_all_7"]) / 2    # blocks 6 & 7
                 vote = rt_ok & (d != 0) & (late != early)
@@ -234,7 +234,7 @@ def main():
                         cell[0] += int(row["n"]); cell[1] += float(row["e"]); cell[2] += float(row["l"])
 
         report.append((name, kept))
-        print(f"  Kept {kept:,} completed sessions with a valid state and D-score")
+        print(f"  Kept {kept:,} US sessions with a state and a D-score")
         if tick_mode:
             print(f"  White only: {acc_total(acc, 'white'):,}  "
                   f"Black only: {acc_total(acc, 'black'):,} (running totals)")
@@ -244,7 +244,9 @@ def main():
             early_is_white = {}
             for o, (ag, n) in sorted(order_votes.items()):
                 share = ag / n if n else 0.5
-                if share >= 0.65:
+                if n < 100:
+                    pass  # too few sessions to tell
+                elif share >= 0.65:
                     early_is_white[o] = True
                 elif share <= 0.35:
                     early_is_white[o] = False
