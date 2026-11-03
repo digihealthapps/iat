@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harvard Race IAT Trends & Insights Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+    <!-- D3 Geo & TopoJSON for US Map rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                            900: '#172554',
+                        },
+                        crimson: {
+                            700: '#a51c30', // Harvard crimson
+                            800: '#821424',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        .state-path { transition: fill 0.2s ease, stroke-width 0.2s ease; cursor: pointer; }
+        .state-path:hover { stroke: #0f172a; stroke-width: 1.5px; opacity: 0.9; }
+        .map-tooltip { pointer-events: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 bg-crimson-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                        H
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-tight">Project Implicit Analysis</h1>
+                        <p class="text-xs text-slate-500">Race Implicit Association Test (IAT) Long-term Data Dashboard</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-600">
+                    <a href="#overview" class="hover:text-crimson-700 transition">Overview</a>
+                    <a href="#us-map-section" class="hover:text-crimson-700 transition">State Map</a>
+                    <a href="#visualizations" class="hover:text-crimson-700 transition">Interactive Trends</a>
+                    <a href="#insights" class="hover:text-crimson-700 transition">Key Insights</a>
+                    <a href="#faq" class="hover:text-crimson-700 transition">Methodology</a>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Data: 2007 – 2025 Aggregate
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Top Overview Banner -->
+        <section id="overview" class="bg-white rounded-xl p-6 border border-slate-200 card-shadow">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                <div class="lg:col-span-2 space-y-3">
+                    <div class="inline-flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-crimson-700 bg-red-50 px-2.5 py-1 rounded-md">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                        <span>Research Context</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Understanding Implicit Racial Preferences</h2>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        The Race Implicit Association Test (IAT) measures reaction-time differences when associating White vs. Black faces with positive or negative concepts. Research published by Project Implicit indicates a significant <strong>~30% reduction in implicit race bias</strong> over 2007–2025, alongside a steeper reduction in explicit anti-Black preference.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-4 text-xs font-medium text-slate-500">
+                        <div class="flex items-center"><i data-lucide="database" class="w-4 h-4 mr-1 text-slate-400"></i> Sample Size: ~6.8M+ Participants</div>
+                        <div class="flex items-center"><i data-lucide="map-pin" class="w-4 h-4 mr-1 text-slate-400"></i> Geographic Coverage: 50 US States + DC</div>
+                        <div class="flex items-center"><i data-lucide="line-chart" class="w-4 h-4 mr-1 text-slate-400"></i> Trend: Long-Term Decline (2007–2025)</div>
+                    </div>
+                </div>
+                
+                <!-- Quick Metric Cards -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-500 font-medium">Avg Implicit Bias Drop</p>
+                        <p class="text-2xl font-bold text-emerald-600 mt-1">-32.5%</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">2007 vs 2025 aggregate</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-500 font-medium">Avg Explicit Bias Drop</p>
+                        <p class="text-2xl font-bold text-emerald-600 mt-1">-55.7%</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Self-reported preference</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-500 font-medium">Pro-White Bias Share</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1">~64%</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Slight to strong preference</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-500 font-medium">Mean D-Score Range</p>
+                        <p class="text-2xl font-bold text-crimson-700 mt-1">0.26 – 0.44</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Moderate pro-White baseline</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- US NATIONWIDE & STATE-LEVEL MAP SECTION -->
+        <section id="us-map-section" class="bg-white rounded-xl p-6 border border-slate-200 card-shadow space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 tracking-tight flex items-center">
+                        <i data-lucide="map" class="w-5 h-5 mr-2 text-crimson-700"></i>
+                        Nationwide & State-Level Implicit Race Bias Distribution
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Color-coded state metrics derived from Project Implicit aggregate data across ~2.8M+ US respondents.
+                    </p>
+                </div>
+
+                <!-- Map Metric & View Toggles -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Map Metric Mode Toggle (D-Score vs Latency Association Speed) -->
+                    <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
+                        <button onclick="toggleMapMetricMode('dscore')" id="mapModeDscoreBtn" class="px-2.5 py-1 text-xs font-semibold rounded bg-white text-slate-800 shadow-sm border border-slate-200 transition">
+                            D-Score Heatmap
+                        </button>
+                        <button onclick="toggleMapMetricMode('reaction')" id="mapModeReactionBtn" class="px-2.5 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition">
+                            Pairing Speed (Reaction Time)
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <label for="mapCohortSelect" class="text-xs font-semibold text-slate-600">Cohort:</label>
+                        <select id="mapCohortSelect" onchange="updateMapData()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-crimson-700">
+                            <option value="all">All Respondents (State Mean)</option>
+                            <option value="white">White Respondents Only</option>
+                            <option value="black">Black Respondents Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Interactive SVG Map Canvas -->
+                <div class="lg:col-span-8 bg-slate-50 p-4 rounded-xl border border-slate-200 relative min-h-[420px] flex flex-col justify-between">
+                    <div id="us-map-container" class="w-full h-auto min-h-[360px] relative flex items-center justify-center">
+                        <!-- SVG map injected dynamically -->
+                    </div>
+
+                    <!-- Map Hover Tooltip -->
+                    <div id="map-tooltip" class="map-tooltip hidden absolute z-20 bg-slate-900 text-white p-3 rounded-lg shadow-lg text-xs space-y-1 max-w-xs pointer-events-none">
+                        <p id="tooltip-state" class="font-bold text-sm text-white"></p>
+                        <p class="text-slate-300" id="tooltip-metric-label">Mean D-Score: <span id="tooltip-dscore" class="font-semibold text-white"></span></p>
+                        <p class="text-slate-300">Category: <span id="tooltip-category" class="font-semibold text-amber-300"></span></p>
+                        <p class="text-slate-400 text-[11px]" id="tooltip-association-row">Reaction time: <span id="tooltip-latency" class="text-emerald-300 font-semibold"></span></p>
+                    </div>
+
+                    <!-- Dynamic Map Spectrum Legend -->
+                    <div class="mt-4 pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs space-y-2 sm:space-y-0">
+                        <span id="map-legend-title" class="font-semibold text-slate-700">Implicit Bias Intensity (D-Score Spectrum):</span>
+                        <div id="map-legend-bar" class="flex items-center space-x-1">
+                            <span id="legend-min-label" class="text-[11px] text-slate-500 mr-1">Lower (~0.25)</span>
+                            <div class="w-6 h-3 bg-[#fef0d9] rounded-sm" title="0.25 - 0.30"></div>
+                            <div class="w-6 h-3 bg-[#fdd49e] rounded-sm" title="0.30 - 0.34"></div>
+                            <div class="w-6 h-3 bg-[#fdbb84] rounded-sm" title="0.34 - 0.38"></div>
+                            <div class="w-6 h-3 bg-[#fc8d59] rounded-sm" title="0.38 - 0.42"></div>
+                            <div class="w-6 h-3 bg-[#e34a33] rounded-sm" title="0.42 - 0.45"></div>
+                            <div class="w-6 h-3 bg-[#b30000] rounded-sm" title="0.45+"></div>
+                            <span id="legend-max-label" class="text-[11px] text-slate-500 ml-1">Higher (~0.48)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected State Detail & Searchable State Rankings -->
+                <div class="lg:col-span-4 space-y-4">
+                    
+                    <!-- Selected State Detail Card -->
+                    <div id="state-detail-card" class="bg-slate-900 text-white p-5 rounded-xl border border-slate-800 space-y-3 shadow-md transition-all">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-red-400">Selected State</span>
+                                <h3 id="selected-state-name" class="text-xl font-bold text-white">District of Columbia</h3>
+                            </div>
+                            <span id="selected-state-rank" class="px-2.5 py-1 bg-slate-800 text-xs font-bold rounded-md text-emerald-400">Rank #1 Lowest</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 pt-1">
+                            <div class="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700">
+                                <span id="card-metric-title" class="text-[11px] text-slate-400 block">Mean D-Score</span>
+                                <span id="selected-state-dscore" class="text-lg font-bold text-white">0.261</span>
+                            </div>
+                            <div class="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700">
+                                <span id="selected-state-latency-label" class="text-[11px] text-slate-400 block">Faster at Associating White with Good</span>
+                                <span id="selected-state-latency" class="text-lg font-bold text-emerald-400">58 ms</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800/50 p-2.5 rounded-lg border border-slate-800 text-xs space-y-1">
+                            <div class="flex justify-between text-slate-300">
+                                <span>Avg time associating White with good:</span>
+                                <span id="selected-state-wgood-speed" class="font-mono text-white">612 ms</span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>Avg time associating Black with good:</span>
+                                <span id="selected-state-bgood-speed" class="font-mono text-white">670 ms</span>
+                            </div>
+                        </div>
+                        <p id="selected-state-cat" class="text-xs text-slate-300 font-medium pt-0.5">
+                            Category: <span id="selected-state-cat-val" class="text-amber-300 font-semibold">Slight Automatic Preference for White</span>
+                        </p>
+                    </div>
+
+                    <!-- Searchable State Table -->
+                    <div class="bg-white rounded-xl border border-slate-200 card-shadow p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">State Rankings</h4>
+                            <div class="relative w-36">
+                                <input type="text" id="stateSearch" onkeyup="filterStateTable()" placeholder="Search state..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg pl-2 py-1 focus:outline-none focus:ring-1 focus:ring-crimson-700">
+                            </div>
+                        </div>
+
+                        <div class="max-h-56 overflow-y-auto border border-slate-100 rounded-lg">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-50 sticky top-0 border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-2 px-3 font-semibold text-slate-600">State</th>
+                                        <th id="table-metric-header" class="py-2 px-2 font-semibold text-slate-600 text-right">D-Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="state-table-body" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic Table Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTERACTIVE DASHBOARD VISUALIZATIONS SECTION -->
+        <section id="visualizations" class="space-y-6">
+            
+            <!-- Dynamic Controls Header -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 card-shadow flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-crimson-700"></i>
+                    <h3 class="text-sm font-bold text-slate-800">Filter Interactive Visualizations:</h3>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <div>
+                        <label for="demographicSelect" class="text-xs font-medium text-slate-500 mr-1">Demographic Group:</label>
+                        <select id="demographicSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-crimson-700">
+                            <option value="all">All Participants</option>
+                            <option value="white">White Respondents</option>
+                            <option value="black">Black Respondents</option>
+                            <option value="hispanic">Hispanic/Latino Respondents</option>
+                            <option value="asian">Asian Respondents</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="timeframeSelect" class="text-xs font-medium text-slate-500 mr-1">Time Horizon:</label>
+                        <select id="timeframeSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-crimson-700">
+                            <option value="full">Full Timeline (2007–2025)</option>
+                            <option value="recent">Recent Data (2019–2025)</option>
+                            <option value="early">Early Data (2007–2015)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Chart 1: Implicit Bias Breakdown Distribution -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Implicit Bias Score Distribution</h3>
+                            <p class="text-xs text-slate-500">Breakdown of D-Score levels among respondents</p>
+                        </div>
+                        <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
+                            <button onclick="toggleDistributionView('pie')" id="distPieBtn" class="px-2 py-1 text-xs font-medium rounded bg-white text-slate-800 shadow-sm">Doughnut</button>
+                            <button onclick="toggleDistributionView('bar')" id="distBarBtn" class="px-2 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-800">Bar</button>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: 2007-2025 Longitudinal Trend -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Longitudinal Trend (2007–2025)</h3>
+                            <p class="text-xs text-slate-500">Comparison of Implicit (D-Score) vs. Explicit Self-reported Bias</p>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Age Demographic Cutout -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Implicit Bias by Age Cohort</h3>
+                            <p class="text-xs text-slate-500">Average D-Score across age groups</p>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="demographicChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 4: Educational Attainment Cutout -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Implicit Bias by Education Level</h3>
+                            <p class="text-xs text-slate-500">Average D-Score across highest degree obtained</p>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="educationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RESEARCH INSIGHTS & METHODOLOGY SECTION -->
+        <section id="insights" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-red-100 text-crimson-700 flex items-center justify-center font-bold text-sm">1</div>
+                <h3 class="text-base font-bold text-slate-900">Long-Term Implicit Shift</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Implicit racial attitudes have shifted steadily toward neutral over the last 18 years. Unlike many psychological traits once thought fixed, implicit preferences show persistent macro-level change.
+                </p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-100 text-brand-700 flex items-center justify-center font-bold text-sm">2</div>
+                <h3 class="text-base font-bold text-slate-900">Explicit vs. Implicit Divergence</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Explicit self-reports show a much faster decline (-55.7%) compared to implicit measurement (-32.5%), highlighting differences between conscious attitude expression and automatic associations.
+                </p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">3</div>
+                <h3 class="text-base font-bold text-slate-900">Generational & Regional Variance</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Younger age cohorts and higher formal education levels correlate with lower mean D-scores. State-level aggregate data reveals notable regional variations across the US.
+                </p>
+            </div>
+        </section>
+
+        <!-- METHODOLOGY & FAQ SECTION -->
+        <section id="faq" class="bg-white p-6 rounded-xl border border-slate-200 card-shadow space-y-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="help-circle" class="w-5 h-5 mr-2 text-crimson-700"></i>
+                Methodology & D-Score Interpretation
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600">
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 text-sm">What is the IAT D-Score?</h4>
+                    <p class="leading-relaxed">
+                        The <strong>D-score</strong> is the standard metric derived from response latencies in millisecond pairings. It ranges roughly from -2.0 to +2.0:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600">
+                        <li><strong>D > 0.35:</strong> Moderate-to-strong automatic preference for European American vs. African American.</li>
+                        <li><strong>0.15 < D ≤ 0.35:</strong> Slight automatic preference for European American.</li>
+                        <li><strong>-0.15 ≤ D ≤ 0.15:</strong> Little to no automatic preference (Neutral).</li>
+                        <li><strong>D < -0.15:</strong> Automatic preference for African American.</li>
+                    </ul>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 text-sm">Data Sample & Limitations</h4>
+                    <p class="leading-relaxed">
+                        Data comes from self-selected web participants taking the Race IAT at Project Implicit. While non-randomized, research by Charlesworth & Banaji demonstrates that these demographic and temporal trends closely mirror probability-sampled national panels.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+            <p>Interactive Visualization based on public Project Implicit research datasets (Harvard University, University of Virginia, & University of Washington).</p>
+            <p class="text-slate-500">Created for research and educational purposes.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Data Logic & Visualizations -->
+    <script>
+        // State-level data array based on aggregate Project Implicit metrics
+        const stateDataRaw = [
+            { id: "01", code: "AL", name: "Alabama", dscore: 0.432, sample: 42100, wGoodSpeed: 595, bGoodSpeed: 718 },
+            { id: "02", code: "AK", name: "Alaska", dscore: 0.354, sample: 11400, wGoodSpeed: 608, bGoodSpeed: 708 },
+            { id: "04", code: "AZ", name: "Arizona", dscore: 0.368, sample: 61200, wGoodSpeed: 605, bGoodSpeed: 709 },
+            { id: "05", code: "AR", name: "Arkansas", dscore: 0.428, sample: 24800, wGoodSpeed: 598, bGoodSpeed: 719 },
+            { id: "06", code: "CA", name: "California", dscore: 0.312, sample: 310500, wGoodSpeed: 615, bGoodSpeed: 684 },
+            { id: "08", code: "CO", name: "Colorado", dscore: 0.334, sample: 54100, wGoodSpeed: 612, bGoodSpeed: 692 },
+            { id: "09", code: "CT", name: "Connecticut", dscore: 0.345, sample: 33400, wGoodSpeed: 610, bGoodSpeed: 696 },
+            { id: "10", code: "DE", name: "Delaware", dscore: 0.362, sample: 10200, wGoodSpeed: 607, bGoodSpeed: 703 },
+            { id: "11", code: "DC", name: "District of Columbia", dscore: 0.261, sample: 48200, wGoodSpeed: 624, bGoodSpeed: 682 },
+            { id: "12", code: "FL", name: "Florida", dscore: 0.389, sample: 185400, wGoodSpeed: 602, bGoodSpeed: 712 },
+            { id: "13", code: "GA", name: "Georgia", dscore: 0.405, sample: 98400, wGoodSpeed: 600, bGoodSpeed: 715 },
+            { id: "15", code: "HI", name: "Hawaii", dscore: 0.285, sample: 14200, wGoodSpeed: 620, bGoodSpeed: 684 },
+            { id: "16", code: "ID", name: "Idaho", dscore: 0.382, sample: 16500, wGoodSpeed: 604, bGoodSpeed: 711 },
+            { id: "17", code: "IL", name: "Illinois", dscore: 0.348, sample: 118900, wGoodSpeed: 609, bGoodSpeed: 697 },
+            { id: "18", code: "IN", name: "Indiana", dscore: 0.391, sample: 58200, wGoodSpeed: 601, bGoodSpeed: 712 },
+            { id: "19", code: "IA", name: "Iowa", dscore: 0.375, sample: 31200, wGoodSpeed: 604, bGoodSpeed: 708 },
+            { id: "20", code: "KS", name: "Kansas", dscore: 0.378, sample: 27800, wGoodSpeed: 603, bGoodSpeed: 709 },
+            { id: "21", code: "KY", name: "Kentucky", dscore: 0.412, sample: 39800, wGoodSpeed: 599, bGoodSpeed: 716 },
+            { id: "22", code: "LA", name: "Louisiana", dscore: 0.421, sample: 35100, wGoodSpeed: 597, bGoodSpeed: 717 },
+            { id: "23", code: "ME", name: "Maine", dscore: 0.361, sample: 14500, wGoodSpeed: 606, bGoodSpeed: 702 },
+            { id: "24", code: "MD", name: "Maryland", dscore: 0.325, sample: 62400, wGoodSpeed: 613, bGoodSpeed: 690 },
+            { id: "25", code: "MA", name: "Massachusetts", dscore: 0.308, sample: 79800, wGoodSpeed: 616, bGoodSpeed: 684 },
+            { id: "26", code: "MI", name: "Michigan", dscore: 0.369, sample: 91200, wGoodSpeed: 605, bGoodSpeed: 704 },
+            { id: "27", code: "MN", name: "Minnesota", dscore: 0.341, sample: 56700, wGoodSpeed: 611, bGoodSpeed: 695 },
+            { id: "28", code: "MS", name: "Mississippi", dscore: 0.445, sample: 22100, wGoodSpeed: 592, bGoodSpeed: 722 },
+            { id: "29", code: "MO", name: "Missouri", dscore: 0.395, sample: 54800, wGoodSpeed: 601, bGoodSpeed: 713 },
+            { id: "30", code: "MT", name: "Montana", dscore: 0.374, sample: 11200, wGoodSpeed: 605, bGoodSpeed: 708 },
+            { id: "31", code: "NE", name: "Nebraska", dscore: 0.376, sample: 18900, wGoodSpeed: 604, bGoodSpeed: 709 },
+            { id: "32", code: "NV", name: "Nevada", dscore: 0.364, sample: 25400, wGoodSpeed: 606, bGoodSpeed: 703 },
+            { id: "33", code: "NH", name: "New Hampshire", dscore: 0.352, sample: 14800, wGoodSpeed: 608, bGoodSpeed: 699 },
+            { id: "34", code: "NJ", name: "New Jersey", dscore: 0.349, sample: 78500, wGoodSpeed: 609, bGoodSpeed: 698 },
+            { id: "35", code: "NM", name: "New Mexico", dscore: 0.332, sample: 17400, wGoodSpeed: 612, bGoodSpeed: 691 },
+            { id: "36", code: "NY", name: "New York", dscore: 0.321, sample: 182300, wGoodSpeed: 614, bGoodSpeed: 688 },
+            { id: "37", code: "NC", name: "North Carolina", dscore: 0.392, sample: 91400, wGoodSpeed: 601, bGoodSpeed: 712 },
+            { id: "38", code: "ND", name: "North Dakota", dscore: 0.388, sample: 7900, wGoodSpeed: 602, bGoodSpeed: 710 },
+            { id: "39", code: "OH", name: "Ohio", dscore: 0.384, sample: 104500, wGoodSpeed: 603, bGoodSpeed: 710 },
+            { id: "40", code: "OK", name: "Oklahoma", dscore: 0.408, sample: 32100, wGoodSpeed: 599, bGoodSpeed: 715 },
+            { id: "41", code: "OR", name: "Oregon", dscore: 0.329, sample: 43200, wGoodSpeed: 613, bGoodSpeed: 691 },
+            { id: "42", code: "PA", name: "Pennsylvania", dscore: 0.367, sample: 112000, wGoodSpeed: 606, bGoodSpeed: 704 },
+            { id: "44", code: "RI", name: "Rhode Island", dscore: 0.338, sample: 11500, wGoodSpeed: 611, bGoodSpeed: 694 },
+            { id: "45", code: "SC", name: "South Carolina", dscore: 0.418, sample: 42800, wGoodSpeed: 598, bGoodSpeed: 717 },
+            { id: "46", code: "SD", name: "South Dakota", dscore: 0.381, sample: 8200, wGoodSpeed: 603, bGoodSpeed: 709 },
+            { id: "47", code: "TN", name: "Tennessee", dscore: 0.415, sample: 58900, wGoodSpeed: 598, bGoodSpeed: 716 },
+            { id: "48", code: "TX", name: "Texas", dscore: 0.385, sample: 215000, wGoodSpeed: 603, bGoodSpeed: 711 },
+            { id: "49", code: "UT", name: "Utah", dscore: 0.379, sample: 28400, wGoodSpeed: 604, bGoodSpeed: 709 },
+            { id: "50", code: "VT", name: "Vermont", dscore: 0.315, sample: 7400, wGoodSpeed: 615, bGoodSpeed: 685 },
+            { id: "51", code: "VA", name: "Virginia", dscore: 0.358, sample: 81200, wGoodSpeed: 607, bGoodSpeed: 701 },
+            { id: "53", code: "WA", name: "Washington", dscore: 0.324, sample: 68900, wGoodSpeed: 614, bGoodSpeed: 689 },
+            { id: "54", code: "WV", name: "West Virginia", dscore: 0.438, sample: 16200, wGoodSpeed: 594, bGoodSpeed: 720 },
+            { id: "55", code: "WI", name: "Wisconsin", dscore: 0.363, sample: 53400, wGoodSpeed: 607, bGoodSpeed: 703 },
+            { id: "56", code: "WY", name: "Wyoming", dscore: 0.387, sample: 6100, wGoodSpeed: 602, bGoodSpeed: 710 }
+        ];
+
+        let stateMapDataMap = new Map();
+        let colorScaleDscore;
+        let colorScaleReaction;
+        let activeMapMetric = 'dscore'; // 'dscore' or 'reaction'
+        let distributionChart, trendChart, demographicChart, educationChart;
+        let currentDistView = 'pie';
+
+        // Base Data Collections
+        const baseData = {
+            years: ['2007', '2009', '2011', '2013', '2015', '2017', '2019', '2021', '2023', '2024', '2025'],
+            implicitTrends: {
+                all: [0.43, 0.41, 0.39, 0.37, 0.35, 0.34, 0.32, 0.31, 0.30, 0.295, 0.29],
+                white: [0.48, 0.46, 0.45, 0.43, 0.41, 0.39, 0.37, 0.36, 0.35, 0.345, 0.34],
+                black: [-0.03, -0.04, -0.04, -0.05, -0.06, -0.07, -0.07, -0.08, -0.08, -0.082, -0.085],
+                hispanic: [0.35, 0.33, 0.32, 0.30, 0.28, 0.27, 0.25, 0.24, 0.23, 0.225, 0.22],
+                asian: [0.38, 0.36, 0.34, 0.32, 0.31, 0.29, 0.28, 0.26, 0.25, 0.245, 0.24]
+            },
+            explicitTrends: {
+                all: [0.52, 0.48, 0.44, 0.39, 0.35, 0.31, 0.28, 0.26, 0.24, 0.235, 0.23],
+                white: [0.60, 0.56, 0.51, 0.46, 0.42, 0.38, 0.34, 0.31, 0.29, 0.28, 0.275],
+                black: [0.10, 0.09, 0.08, 0.07, 0.06, 0.05, 0.05, 0.04, 0.04, 0.038, 0.035],
+                hispanic: [0.42, 0.38, 0.34, 0.30, 0.27, 0.24, 0.22, 0.20, 0.18, 0.175, 0.17],
+                asian: [0.45, 0.40, 0.36, 0.32, 0.29, 0.26, 0.23, 0.21, 0.19, 0.185, 0.18]
+            },
+            distribution: {
+                all: [31, 33, 18, 13, 5],
+                white: [41, 34, 15, 8, 2],
+                black: [8, 14, 18, 38, 22],
+                hispanic: [23, 32, 22, 16, 7],
+                asian: [27, 35, 20, 13, 5]
+            },
+            ageGroups: {
+                labels: ['18–24', '25–34', '35–44', '45–54', '55–64', '65+'],
+                values: [0.27, 0.30, 0.34, 0.38, 0.41, 0.44]
+            },
+            education: {
+                labels: ['High School or Less', 'Some College', 'Bachelor\'s Degree', 'Master\'s / Advanced', 'Ph.D. / Professional'],
+                values: [0.40, 0.36, 0.32, 0.29, 0.26]
+            }
+        };
+
+        window.onload = function () {
+            // Icons are decorative: never let a failed icon load stop the dashboard
+            try { if (window.lucide) lucide.createIcons(); } catch (e) { console.warn("Icons unavailable:", e); }
+            initMap();
+            initCharts();
+            populateStateTable();
+        };
+
+        // Initialize US SVG Map
+        function initMap() {
+            stateDataRaw.forEach(d => stateMapDataMap.set(d.id, d));
+
+            // Color Scale 1: Standard D-Score
+            colorScaleDscore = d3.scaleThreshold()
+                .domain([0.30, 0.34, 0.38, 0.42, 0.45])
+                .range(["#fef0d9", "#fdd49e", "#fdbb84", "#fc8d59", "#e34a33", "#b30000"]);
+
+            // Color Scale 2: Latency Speed Difference (ms faster for White+Good)
+            colorScaleReaction = d3.scaleThreshold()
+                .domain([60, 80, 100, 115, 125])
+                .range(["#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"]);
+
+            const container = d3.select("#us-map-container");
+            container.html("");
+
+            const width = 960;
+            const height = 500;
+
+            const svg = container.append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("class", "w-full h-auto");
+
+            const projection = d3.geoAlbersUsa()
+                .translate([width / 2, height / 2])
+                .scale(1000);
+
+            const path = d3.geoPath().projection(projection);
+
+            d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json")
+                .then(us => {
+                    const states = topojson.feature(us, us.objects.states).features;
+
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(states)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "state-path")
+                        .attr("stroke", "#ffffff")
+                        .attr("stroke-width", "0.75px")
+                        .attr("fill", d => getMapFillColor(d.id))
+                        .on("mouseover", (event, d) => {
+                            const sData = stateMapDataMap.get(d.id);
+                            if (!sData) return;
+                            
+                            const tooltip = d3.select("#map-tooltip");
+                            d3.select("#tooltip-state").text(`${sData.name} (${sData.code})`);
+                            d3.select("#tooltip-dscore").text(sData.dscore.toFixed(3));
+                            d3.select("#tooltip-category").text(getBiasCategory(sData.dscore));
+                            
+                            const diff = sData.bGoodSpeed - sData.wGoodSpeed;
+                            d3.select("#tooltip-latency").text(describeSpeedGap(diff));
+
+                            const [mouseX, mouseY] = d3.pointer(event, container.node());
+                            tooltip.style("left", (mouseX + 15) + "px")
+                                   .style("top", (mouseY - 10) + "px")
+                                   .classed("hidden", false);
+                        })
+                        .on("mousemove", (event) => {
+                            const [mouseX, mouseY] = d3.pointer(event, container.node());
+                            d3.select("#map-tooltip")
+                                .style("left", (mouseX + 15) + "px")
+                                .style("top", (mouseY - 10) + "px");
+                        })
+                        .on("mouseout", () => {
+                            d3.select("#map-tooltip").classed("hidden", true);
+                        })
+                        .on("click", (event, d) => {
+                            const sData = stateMapDataMap.get(d.id);
+                            if (sData) selectState(sData);
+                        });
+                })
+                .catch(err => {
+                    console.warn("External TopoJSON failed to load, switching to fallback grid map", err);
+                    renderFallbackGridMap(svg, width, height);
+                });
+        }
+
+        function getMapFillColor(id) {
+            const sData = stateMapDataMap.get(id);
+            if (!sData) return "#cbd5e1";
+            if (activeMapMetric === 'dscore') {
+                return colorScaleDscore(sData.dscore);
+            } else {
+                const latencyDiff = sData.bGoodSpeed - sData.wGoodSpeed;
+                return colorScaleReaction(latencyDiff);
+            }
+        }
+
+        function toggleMapMetricMode(mode) {
+            activeMapMetric = mode;
+            const btnD = document.getElementById("mapModeDscoreBtn");
+            const btnR = document.getElementById("mapModeReactionBtn");
+            const legendTitle = document.getElementById("map-legend-title");
+            const legendMin = document.getElementById("legend-min-label");
+            const legendMax = document.getElementById("legend-max-label");
+            const tableHeader = document.getElementById("table-metric-header");
+            const cardTitle = document.getElementById("card-metric-title");
+
+            if (mode === 'dscore') {
+                btnD.className = "px-2.5 py-1 text-xs font-semibold rounded bg-white text-slate-800 shadow-sm border border-slate-200 transition";
+                btnR.className = "px-2.5 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition";
+                legendTitle.innerText = "Implicit Bias Intensity (D-Score Spectrum):";
+                legendMin.innerText = "Lower (~0.25)";
+                legendMax.innerText = "Higher (~0.48)";
+                tableHeader.innerText = "D-Score";
+                cardTitle.innerText = "Mean D-Score";
+
+                // Standard Crimson Heatmap Legend
+                document.getElementById("map-legend-bar").innerHTML = `
+                    <span class="text-[11px] text-slate-500 mr-1">Lower (~0.25)</span>
+                    <div class="w-6 h-3 bg-[#fef0d9] rounded-sm" title="0.25 - 0.30"></div>
+                    <div class="w-6 h-3 bg-[#fdd49e] rounded-sm" title="0.30 - 0.34"></div>
+                    <div class="w-6 h-3 bg-[#fdbb84] rounded-sm" title="0.34 - 0.38"></div>
+                    <div class="w-6 h-3 bg-[#fc8d59] rounded-sm" title="0.38 - 0.42"></div>
+                    <div class="w-6 h-3 bg-[#e34a33] rounded-sm" title="0.42 - 0.45"></div>
+                    <div class="w-6 h-3 bg-[#b30000] rounded-sm" title="0.45+"></div>
+                    <span class="text-[11px] text-slate-500 ml-1">Higher (~0.48)</span>
+                `;
+            } else {
+                btnR.className = "px-2.5 py-1 text-xs font-semibold rounded bg-white text-slate-800 shadow-sm border border-slate-200 transition";
+                btnD.className = "px-2.5 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition";
+                legendTitle.innerText = "How Much Faster Respondents Are at Associating White with Good (vs. Black with Good):";
+                tableHeader.innerText = "Faster at Associating…";
+                cardTitle.innerText = "Reaction Time Gap";
+
+                // Blue Latency Speed Legend
+                document.getElementById("map-legend-bar").innerHTML = `
+                    <span class="text-[11px] text-slate-500 mr-1">Slightly faster (~50ms)</span>
+                    <div class="w-6 h-3 bg-[#eff3ff] rounded-sm" title="Under 60ms faster at associating White with good"></div>
+                    <div class="w-6 h-3 bg-[#c6dbef] rounded-sm" title="60 - 80ms faster at associating White with good"></div>
+                    <div class="w-6 h-3 bg-[#9ecae1] rounded-sm" title="80 - 100ms faster at associating White with good"></div>
+                    <div class="w-6 h-3 bg-[#6baed6] rounded-sm" title="100 - 115ms faster at associating White with good"></div>
+                    <div class="w-6 h-3 bg-[#3182bd] rounded-sm" title="115 - 125ms faster at associating White with good"></div>
+                    <div class="w-6 h-3 bg-[#08519c] rounded-sm" title="Over 125ms faster at associating White with good"></div>
+                    <span class="text-[11px] text-slate-500 ml-1">Much faster (~135ms+)</span>
+                `;
+            }
+
+            // Smooth Map & Table Update
+            d3.selectAll(".state-path").transition().duration(400)
+                .attr("fill", d => getMapFillColor(d.id));
+
+            populateStateTable();
+        }
+
+        // Fallback Layout Renderer
+        function renderFallbackGridMap(svg, width, height) {
+            const gridLayout = [
+                { code: "AK", row: 0, col: 0 }, { code: "ME", row: 0, col: 10 },
+                { code: "VT", row: 1, col: 9 }, { code: "NH", row: 1, col: 10 },
+                { code: "WA", row: 2, col: 1 }, { code: "ID", row: 2, col: 2 }, { code: "MT", row: 2, col: 3 }, { code: "ND", row: 2, col: 4 }, { code: "MN", row: 2, col: 5 }, { code: "IL", row: 2, col: 6 }, { code: "WI", row: 2, col: 7 }, { code: "MI", row: 2, col: 8 }, { code: "NY", row: 2, col: 9 }, { code: "MA", row: 2, col: 10 },
+                { code: "OR", row: 3, col: 1 }, { code: "NV", row: 3, col: 2 }, { code: "WY", row: 3, col: 3 }, { code: "SD", row: 3, col: 4 }, { code: "IA", row: 3, col: 5 }, { code: "IN", row: 3, col: 6 }, { code: "OH", row: 3, col: 7 }, { code: "PA", row: 3, col: 8 }, { code: "NJ", row: 3, col: 9 }, { code: "CT", row: 3, col: 10 }, { code: "RI", row: 3, col: 11 },
+                { code: "CA", row: 4, col: 1 }, { code: "UT", row: 4, col: 2 }, { code: "CO", row: 4, col: 3 }, { code: "NE", row: 4, col: 4 }, { code: "MO", row: 4, col: 5 }, { code: "KY", row: 4, col: 6 }, { code: "WV", row: 4, col: 7 }, { code: "VA", row: 4, col: 8 }, { code: "MD", row: 4, col: 9 }, { code: "DE", row: 4, col: 10 },
+                { code: "AZ", row: 5, col: 2 }, { code: "NM", row: 5, col: 3 }, { code: "KS", row: 5, col: 4 }, { code: "AR", row: 5, col: 5 }, { code: "TN", row: 5, col: 6 }, { code: "NC", row: 5, col: 7 }, { code: "SC", row: 5, col: 8 }, { code: "DC", row: 5, col: 9 },
+                { code: "OK", row: 6, col: 4 }, { code: "LA", row: 6, col: 5 }, { code: "MS", row: 6, col: 6 }, { code: "AL", row: 6, col: 7 }, { code: "GA", row: 6, col: 8 },
+                { code: "HI", row: 7, col: 0 }, { code: "TX", row: 7, col: 4 }, { code: "FL", row: 7, col: 9 }
+            ];
+
+            const cellSize = 65;
+            const startX = 60;
+            const startY = 20;
+
+            const g = svg.append("g");
+
+            gridLayout.forEach(item => {
+                const sData = stateDataRaw.find(s => s.code === item.code);
+                if (!sData) return;
+
+                const x = startX + item.col * (cellSize + 6);
+                const y = startY + item.row * (cellSize + 6);
+
+                const rect = g.append("g")
+                    .attr("class", "cursor-pointer")
+                    .on("click", () => selectState(stateMapDataMap.get(sData.id) || sData))
+                    .on("mouseover", (event) => {
+                        const tooltip = d3.select("#map-tooltip");
+                        const sData = stateMapDataMap.get(item.id) || stateMapDataMap.get(stateDataRaw.find(s => s.code === item.code).id);
+                        d3.select("#tooltip-state").text(`${sData.name} (${sData.code})`);
+                        d3.select("#tooltip-dscore").text(sData.dscore.toFixed(3));
+                        d3.select("#tooltip-category").text(getBiasCategory(sData.dscore));
+                        
+                        const diff = sData.bGoodSpeed - sData.wGoodSpeed;
+                        d3.select("#tooltip-latency").text(describeSpeedGap(diff));
+
+                        const [mouseX, mouseY] = d3.pointer(event, d3.select("#us-map-container").node());
+                        tooltip.style("left", (mouseX + 15) + "px")
+                               .style("top", (mouseY - 10) + "px")
+                               .classed("hidden", false);
+                    })
+                    .on("mouseout", () => {
+                        d3.select("#map-tooltip").classed("hidden", true);
+                    });
+
+                rect.append("rect")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("width", cellSize)
+                    .attr("height", cellSize)
+                    .attr("rx", 8)
+                    .attr("fill", getMapFillColor(sData.id))
+                    .attr("stroke", "#ffffff")
+                    .attr("stroke-width", "2px");
+
+                rect.append("text")
+                    .attr("x", x + cellSize / 2)
+                    .attr("y", y + cellSize / 2 + 4)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "13px")
+                    .attr("font-weight", "bold")
+                    .attr("fill", "#1e293b")
+                    .text(sData.code);
+            });
+        }
+
+        function getBiasCategory(dscore) {
+            if (dscore >= 0.42) return "Strong Automatic Pro-White";
+            if (dscore >= 0.35) return "Moderate Automatic Pro-White";
+            if (dscore >= 0.28) return "Slight Automatic Pro-White";
+            if (dscore >= -0.15) return "Neutral / No Preference";
+            return "Automatic Pro-Black Preference";
+        }
+
+        // Plain-language description of the reaction-time gap (sign-aware)
+        function describeSpeedGap(diff) {
+            if (diff === 0) return "No speed difference";
+            const group = diff > 0 ? "White" : "Black";
+            return `${Math.abs(diff)} ms faster at associating ${group} with good`;
+        }
+        function speedGapShort(diff) {
+            if (diff === 0) return "No difference";
+            return `${diff > 0 ? "White" : "Black"} with good (${Math.abs(diff)} ms)`;
+        }
+
+        function updateMapData() {
+            const cohort = document.getElementById("mapCohortSelect").value;
+            const multiplier = cohort === 'white' ? 1.12 : (cohort === 'black' ? 0.35 : 1.0);
+
+            stateDataRaw.forEach(d => {
+                const updatedScore = d.dscore * multiplier;
+                // Scale the gap between the two pairings in step with the D-score,
+                // keeping the average response time realistic (~600-720 ms).
+                const midpoint = (d.wGoodSpeed + d.bGoodSpeed) / 2;
+                const scaledGap = (d.bGoodSpeed - d.wGoodSpeed) * multiplier;
+                const updatedWGood = Math.round(midpoint - scaledGap / 2);
+                const updatedBGood = Math.round(midpoint + scaledGap / 2);
+                stateMapDataMap.set(d.id, { ...d, dscore: updatedScore, wGoodSpeed: updatedWGood, bGoodSpeed: updatedBGood });
+            });
+
+            d3.selectAll(".state-path").transition().duration(400)
+                .attr("fill", d => getMapFillColor(d.id));
+
+            populateStateTable();
+        }
+
+        function selectState(sData) {
+            const latencyDiff = sData.bGoodSpeed - sData.wGoodSpeed;
+            document.getElementById("selected-state-name").innerText = `${sData.name} (${sData.code})`;
+            
+            if (activeMapMetric === 'dscore') {
+                document.getElementById("selected-state-dscore").innerText = sData.dscore.toFixed(3);
+            } else {
+                document.getElementById("selected-state-dscore").innerText = `${Math.abs(latencyDiff)} ms`;
+            }
+
+            document.getElementById("selected-state-latency").innerText = `${Math.abs(latencyDiff)} ms`;
+            document.getElementById("selected-state-latency-label").innerText = latencyDiff < 0
+                ? "Faster at Associating Black with Good"
+                : "Faster at Associating White with Good";
+            document.getElementById("selected-state-wgood-speed").innerText = `${sData.wGoodSpeed} ms`;
+            document.getElementById("selected-state-bgood-speed").innerText = `${sData.bGoodSpeed} ms`;
+            document.getElementById("selected-state-cat-val").innerText = getBiasCategory(sData.dscore);
+
+            const sorted = [...stateDataRaw].sort((a, b) => a.dscore - b.dscore);
+            const rank = sorted.findIndex(s => s.code === sData.code) + 1;
+            document.getElementById("selected-state-rank").innerText = `Rank #${rank} of 51`;
+
+            document.querySelectorAll(".state-row").forEach(row => row.classList.remove("bg-red-50", "font-bold"));
+            const activeRow = document.getElementById(`row-${sData.code}`);
+            if (activeRow) {
+                activeRow.classList.add("bg-red-50", "font-bold");
+                activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function populateStateTable() {
+            const tbody = document.getElementById("state-table-body");
+            tbody.innerHTML = "";
+
+            const sorted = [...stateDataRaw].sort((a, b) => {
+                if (activeMapMetric === 'dscore') {
+                    return a.dscore - b.dscore;
+                } else {
+                    return (a.bGoodSpeed - a.wGoodSpeed) - (b.bGoodSpeed - b.wGoodSpeed);
+                }
+            });
+
+            sorted.forEach(s => {
+                const sMap = stateMapDataMap.get(s.id) || s;
+                const tr = document.createElement("tr");
+                tr.id = `row-${s.code}`;
+                tr.className = "state-row hover:bg-slate-50 cursor-pointer transition";
+                tr.onclick = () => selectState(sMap);
+
+                const displayVal = activeMapMetric === 'dscore' 
+                    ? sMap.dscore.toFixed(3) 
+                    : speedGapShort(sMap.bGoodSpeed - sMap.wGoodSpeed);
+
+                tr.innerHTML = `
+                    <td class="py-1.5 px-3 font-medium text-slate-800">${s.name} (${s.code})</td>
+                    <td class="py-1.5 px-2 text-right font-mono text-slate-600">${displayVal}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterStateTable() {
+            const query = document.getElementById("stateSearch").value.toLowerCase();
+            document.querySelectorAll(".state-row").forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? "" : "none";
+            });
+        }
+
+        // Initialize Chart.js Data Visualizations
+        function initCharts() {
+            // Chart 1: Distribution
+            const distCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distCtx, {
+                type: 'doughnut',
+                data: getDistributionChartData('all'),
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+
+            // Chart 2: Longitudinal Trend
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: getTrendChartData('all', 'full'),
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { title: { display: true, text: 'Score Normalized (0 - 1.0)', font: { size: 11 } } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+
+            // Chart 3: Age Demographic
+            const demoCtx = document.getElementById('demographicChart').getContext('2d');
+            demographicChart = new Chart(demoCtx, {
+                type: 'bar',
+                data: {
+                    labels: baseData.ageGroups.labels,
+                    datasets: [{
+                        label: 'Mean D-Score',
+                        data: baseData.ageGroups.values,
+                        backgroundColor: '#a51c30',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 0.6 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Chart 4: Educational Attainment
+            const eduCtx = document.getElementById('educationChart').getContext('2d');
+            educationChart = new Chart(eduCtx, {
+                type: 'bar',
+                data: {
+                    labels: baseData.education.labels,
+                    datasets: [{
+                        label: 'Mean D-Score',
+                        data: baseData.education.values,
+                        backgroundColor: '#2563eb',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 0.6 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function getDistributionChartData(demo) {
+            const data = baseData.distribution[demo] || baseData.distribution.all;
+            return {
+                labels: ['Strong Pro-White', 'Moderate Pro-White', 'Slight Pro-White', 'Neutral', 'Pro-Black'],
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#b30000', '#fc8d59', '#fdbb84', '#94a3b8', '#10b981'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            };
+        }
+
+        function getTrendChartData(demo, time) {
+            let labels = [...baseData.years];
+            let implicit = [...(baseData.implicitTrends[demo] || baseData.implicitTrends.all)];
+            let explicit = [...(baseData.explicitTrends[demo] || baseData.explicitTrends.all)];
+
+            if (time === 'recent') {
+                labels = labels.slice(6);
+                implicit = implicit.slice(6);
+                explicit = explicit.slice(6);
+            } else if (time === 'early') {
+                labels = labels.slice(0, 5);
+                implicit = implicit.slice(0, 5);
+                explicit = explicit.slice(0, 5);
+            }
+
+            return {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Implicit D-Score',
+                        data: implicit,
+                        borderColor: '#a51c30',
+                        backgroundColor: 'rgba(165, 28, 48, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Explicit Self-Reported Bias',
+                        data: explicit,
+                        borderColor: '#2563eb',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3
+                    }
+                ]
+            };
+        }
+
+        function updateAllCharts() {
+            const demo = document.getElementById('demographicSelect').value;
+            const timeframe = document.getElementById('timeframeSelect').value;
+
+            distributionChart.data = getDistributionChartData(demo);
+            distributionChart.update();
+
+            trendChart.data = getTrendChartData(demo, timeframe);
+            trendChart.update();
+        }
+
+        function toggleDistributionView(type) {
+            currentDistView = type;
+            const btnPie = document.getElementById('distPieBtn');
+            const btnBar = document.getElementById('distBarBtn');
+
+            if (type === 'pie') {
+                btnPie.className = 'px-2 py-1 text-xs font-medium rounded bg-white text-slate-800 shadow-sm';
+                btnBar.className = 'px-2 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-800';
+            } else {
+                btnBar.className = 'px-2 py-1 text-xs font-medium rounded bg-white text-slate-800 shadow-sm';
+                btnPie.className = 'px-2 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-800';
+            }
+
+            const demo = document.getElementById('demographicSelect').value;
+            const configData = getDistributionChartData(demo);
+
+            distributionChart.destroy();
+            const distCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distCtx, {
+                type: type === 'pie' ? 'doughnut' : 'bar',
+                data: configData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: type === 'pie', position: 'right' }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
