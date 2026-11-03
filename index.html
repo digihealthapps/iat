@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harvard Race IAT Trends & Insights Dashboard</title>
+    <title>Project Implicit Race IAT Trends & Insights Dashboard</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <!-- Chart.js -->
@@ -32,10 +32,6 @@
                             700: '#1e40af',
                             800: '#1e3a8a',
                             900: '#172554',
-                        },
-                        crimson: {
-                            700: '#a51c30', // Harvard crimson
-                            800: '#821424',
                         }
                     }
                 }
@@ -66,11 +62,11 @@
                     </div>
                 </div>
                 <div class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-600">
-                    <a href="#overview" class="hover:text-crimson-700 transition">Overview</a>
-                    <a href="#us-map-section" class="hover:text-crimson-700 transition">State Map</a>
-                    <a href="#visualizations" class="hover:text-crimson-700 transition">Interactive Trends</a>
-                    <a href="#insights" class="hover:text-crimson-700 transition">Key Insights</a>
-                    <a href="#faq" class="hover:text-crimson-700 transition">Methodology</a>
+                    <a href="#overview" class="hover:text-slate-900 transition">Overview</a>
+                    <a href="#us-map-section" class="hover:text-slate-900 transition">State Map</a>
+                    <a href="#visualizations" class="hover:text-slate-900 transition">Interactive Trends</a>
+                    <a href="#insights" class="hover:text-slate-900 transition">Key Insights</a>
+                    <a href="#faq" class="hover:text-slate-900 transition">Methodology</a>
                 </div>
                 <div class="flex items-center space-x-2">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
@@ -88,7 +84,7 @@
         <section id="overview" class="bg-white rounded-xl p-6 border border-slate-200 card-shadow">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
                 <div class="lg:col-span-2 space-y-3">
-                    <div class="inline-flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-crimson-700 bg-red-50 px-2.5 py-1 rounded-md">
+                    <div class="inline-flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md">
                         <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
                         <span>Research Context</span>
                     </div>
@@ -122,7 +118,7 @@
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <p class="text-xs text-slate-500 font-medium">Mean D-Score Range</p>
-                        <p class="text-2xl font-bold text-crimson-700 mt-1">0.26 – 0.44</p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">0.26 – 0.44</p>
                         <p class="text-[11px] text-slate-400 mt-0.5">Moderate pro-White baseline</p>
                     </div>
                 </div>
@@ -134,7 +130,7 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900 tracking-tight flex items-center">
-                        <i data-lucide="map" class="w-5 h-5 mr-2 text-crimson-700"></i>
+                        <i data-lucide="map" class="w-5 h-5 mr-2 text-slate-900"></i>
                         Nationwide & State-Level Implicit Race Bias Distribution
                     </h2>
                     <p class="text-xs text-slate-500 mt-1">
@@ -156,7 +152,7 @@
 
                     <div class="flex items-center space-x-2">
                         <label for="mapCohortSelect" class="text-xs font-semibold text-slate-600">Cohort:</label>
-                        <select id="mapCohortSelect" onchange="updateMapData()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-crimson-700">
+                        <select id="mapCohortSelect" onchange="updateMapData()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900">
                             <option value="all">All Respondents (State Mean)</option>
                             <option value="white">White Respondents Only</option>
                             <option value="black">Black Respondents Only</option>
@@ -204,7 +200,7 @@
                     <div id="state-detail-card" class="bg-slate-900 text-white p-5 rounded-xl border border-slate-800 space-y-3 shadow-md transition-all">
                         <div class="flex justify-between items-start">
                             <div>
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-red-400">Selected State</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Selected State</span>
                                 <h3 id="selected-state-name" class="text-xl font-bold text-white">District of Columbia</h3>
                             </div>
                             <span id="selected-state-rank" class="px-2.5 py-1 bg-slate-800 text-xs font-bold rounded-md text-emerald-400">Rank #1 Lowest</span>
@@ -239,7 +235,7 @@
                         <div class="flex items-center justify-between">
                             <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">State Rankings</h4>
                             <div class="relative w-36">
-                                <input type="text" id="stateSearch" onkeyup="filterStateTable()" placeholder="Search state..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg pl-2 py-1 focus:outline-none focus:ring-1 focus:ring-crimson-700">
+                                <input type="text" id="stateSearch" onkeyup="filterStateTable()" placeholder="Search state..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg pl-2 py-1 focus:outline-none focus:ring-1 focus:ring-slate-900">
                             </div>
                         </div>
 
@@ -267,14 +263,14 @@
             <!-- Dynamic Controls Header -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 card-shadow flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center space-x-2">
-                    <i data-lucide="sliders" class="w-5 h-5 text-crimson-700"></i>
+                    <i data-lucide="sliders" class="w-5 h-5 text-slate-900"></i>
                     <h3 class="text-sm font-bold text-slate-800">Filter Interactive Visualizations:</h3>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
                     <div>
                         <label for="demographicSelect" class="text-xs font-medium text-slate-500 mr-1">Demographic Group:</label>
-                        <select id="demographicSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-crimson-700">
+                        <select id="demographicSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900">
                             <option value="all">All Participants</option>
                             <option value="white">White Respondents</option>
                             <option value="black">Black Respondents</option>
@@ -285,7 +281,7 @@
 
                     <div>
                         <label for="timeframeSelect" class="text-xs font-medium text-slate-500 mr-1">Time Horizon:</label>
-                        <select id="timeframeSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-crimson-700">
+                        <select id="timeframeSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900">
                             <option value="full">Full Timeline (2007–2025)</option>
                             <option value="recent">Recent Data (2019–2025)</option>
                             <option value="early">Early Data (2007–2015)</option>
@@ -358,7 +354,7 @@
         <!-- RESEARCH INSIGHTS & METHODOLOGY SECTION -->
         <section id="insights" class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-2">
-                <div class="w-8 h-8 rounded-lg bg-red-100 text-crimson-700 flex items-center justify-center font-bold text-sm">1</div>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-900 flex items-center justify-center font-bold text-sm">1</div>
                 <h3 class="text-base font-bold text-slate-900">Long-Term Implicit Shift</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
                     Implicit racial attitudes have shifted steadily toward neutral over the last 18 years. Unlike many psychological traits once thought fixed, implicit preferences show persistent macro-level change.
@@ -383,7 +379,7 @@
         <!-- METHODOLOGY & FAQ SECTION -->
         <section id="faq" class="bg-white p-6 rounded-xl border border-slate-200 card-shadow space-y-4">
             <h3 class="text-lg font-bold text-slate-900 flex items-center">
-                <i data-lucide="help-circle" class="w-5 h-5 mr-2 text-crimson-700"></i>
+                <i data-lucide="help-circle" class="w-5 h-5 mr-2 text-slate-900"></i>
                 Methodology & D-Score Interpretation
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600">
@@ -414,6 +410,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
             <p>Interactive Visualization based on public Project Implicit research datasets (Harvard University, University of Virginia, & University of Washington).</p>
             <p class="text-slate-500">Created for research and educational purposes.</p>
+            <p class="text-slate-500">This is an independent project. It is not affiliated with, endorsed by, or sponsored by Project Implicit, Harvard University, the University of Virginia, the University of Washington, or any other institution named on this site.</p>
         </div>
     </footer>
 
@@ -809,10 +806,10 @@
             const rank = sorted.findIndex(s => s.code === sData.code) + 1;
             document.getElementById("selected-state-rank").innerText = `Rank #${rank} of 51`;
 
-            document.querySelectorAll(".state-row").forEach(row => row.classList.remove("bg-red-50", "font-bold"));
+            document.querySelectorAll(".state-row").forEach(row => row.classList.remove("bg-slate-100", "font-bold"));
             const activeRow = document.getElementById(`row-${sData.code}`);
             if (activeRow) {
-                activeRow.classList.add("bg-red-50", "font-bold");
+                activeRow.classList.add("bg-slate-100", "font-bold");
                 if (scroll) activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
@@ -898,7 +895,7 @@
                     datasets: [{
                         label: 'Mean D-Score',
                         data: baseData.ageGroups.values,
-                        backgroundColor: '#a51c30',
+                        backgroundColor: '#1e293b',
                         borderRadius: 6
                     }]
                 },
@@ -966,8 +963,8 @@
                     {
                         label: 'Implicit D-Score',
                         data: implicit,
-                        borderColor: '#a51c30',
-                        backgroundColor: 'rgba(165, 28, 48, 0.1)',
+                        borderColor: '#1e293b',
+                        backgroundColor: 'rgba(30, 41, 59, 0.08)',
                         fill: true,
                         tension: 0.3
                     },
