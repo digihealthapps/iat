@@ -150,9 +150,9 @@
 
                     <div class="flex items-center space-x-2">
                         <label for="mapYearFrom" class="text-xs font-semibold text-slate-600">Years:</label>
-                        <select id="mapYearFrom" onchange="updateYearRange('from')" aria-label="From year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+                        <select id="mapYearFrom" onchange="onYearSelect('map', 'from')" aria-label="From year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
                         <span class="text-xs text-slate-500">to</span>
-                        <select id="mapYearTo" onchange="updateYearRange('to')" aria-label="To year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+                        <select id="mapYearTo" onchange="onYearSelect('map', 'to')" aria-label="To year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
                     </div>
 
                     <div class="flex items-center space-x-2">
@@ -283,13 +283,17 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label for="timeframeSelect" class="text-xs font-medium text-slate-500 mr-1">Time Horizon:</label>
-                        <select id="timeframeSelect" onchange="updateAllCharts()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label for="timeframeSelect" class="text-xs font-medium text-slate-500">Time Horizon:</label>
+                        <select id="timeframeSelect" onchange="applyTimeframePreset()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900">
                             <option value="full">Full Timeline (2002–2025)</option>
                             <option value="early">Earlier Years (2002–2012)</option>
                             <option value="recent">Recent Years (2013–2025)</option>
+                            <option value="custom">Custom years</option>
                         </select>
+                        <select id="chartYearFrom" onchange="onYearSelect('chart', 'from')" aria-label="From year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+                        <span class="text-xs text-slate-500">to</span>
+                        <select id="chartYearTo" onchange="onYearSelect('chart', 'to')" aria-label="To year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
                     </div>
                 </div>
             </div>
@@ -302,7 +306,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Implicit Bias Score Distribution</h3>
-                            <p class="text-xs text-slate-500">Share of respondents (%) at each D-Score level · follows the selected state, the map's years and Demographic Group</p>
+                            <p class="text-xs text-slate-500">Share of respondents (%) at each D-Score level · follows the selected state, the selected years and Demographic Group</p>
                             <p id="dist-subtitle" class="text-xs font-medium text-slate-700 mt-0.5"></p>
                         </div>
                         <div class="flex items-center gap-2">
@@ -323,7 +327,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 id="trend-title" class="text-base font-bold text-slate-900">Longitudinal Trend (2002–03 to 2025)</h3>
-                            <p class="text-xs text-slate-500">US respondents, by year. Implicit: mean D-score. Explicit: self-reported preference from −1 (prefer African Americans) to +1 (prefer European Americans); 2002–2006 asked a 5-point version, later years a 7-point one. Follows Demographic Group and Time Horizon.</p>
+                            <p class="text-xs text-slate-500">US respondents, by year. Implicit: mean D-score. Explicit: self-reported preference from −1 (prefer African Americans) to +1 (prefer European Americans); 2002–2006 asked a 5-point version, later years a 7-point one. Follows Demographic Group and the selected years.</p>
                         </div>
                     </div>
                     <div class="h-64 relative">
@@ -404,7 +408,7 @@
                         Data comes from self-selected web participants taking the Race IAT at Project Implicit. While non-randomized, research by Charlesworth & Banaji demonstrates that these demographic and temporal trends closely mirror probability-sampled national panels.
                     </p>
                     <p class="leading-relaxed">
-                        This dashboard uses every public Race IAT file on OSF from 2002–2003 to 2025. It counts US sessions that have a D-score and a state, and pools the years chosen above the map (all years by default), so years with more sessions weigh more. White, Black and Asian mean respondents who gave that race only and are not Hispanic. Hispanic/Latino covers any race. In 2002–2006, Asian includes Pacific Islander. Groups with fewer than 100 respondents in a state are marked as low sample. Age is the recorded age, or session year minus birth year from 2016 on (under-18s left out). Education is the highest level completed, from a 14-level question grouped into five levels.
+                        This dashboard uses every public Race IAT file on OSF from 2002–2003 to 2025. It counts US sessions that have a D-score and a state, and pools the selected years (all years by default; set them above the map or under Time Horizon, which stay in sync), so years with more sessions weigh more. White, Black and Asian mean respondents who gave that race only and are not Hispanic. Hispanic/Latino covers any race. In 2002–2006, Asian includes Pacific Islander. Groups with fewer than 100 respondents in a state are marked as low sample. Age is the recorded age, or session year minus birth year from 2016 on (under-18s left out). Education is the highest level completed, from a 14-level question grouped into five levels.
                     </p>
                 </div>
             </div>
@@ -425,7 +429,19 @@
 
     <!-- JavaScript Data Logic & Visualizations -->
     <script>
-        const DATA = window.IAT_DATA;
+        let DATA = window.IAT_DATA;
+        // The page needs the per-year data added in Nov 2026. A browser or GitHub's cache can
+        // briefly pair this page with an older data file; if so, fetch a fresh copy.
+        const dataIsCurrent = d => !!(d && d.states_by_year && d.year_fields && d.us_by_year && d.bands);
+        function loadFreshData() {
+            return new Promise(resolve => {
+                const el = document.createElement('script');
+                el.src = 'data/iat_data.js?fresh=' + Date.now();
+                el.onload = () => resolve(window.IAT_DATA);
+                el.onerror = () => resolve(null);
+                document.head.appendChild(el);
+            });
+        }
 
         // FIPS id, postal code and name for the 50 states + DC (map shapes are keyed by FIPS id)
         const STATE_META = [
@@ -597,29 +613,64 @@
             return (pooledStates()[code] || {})[cohort] || null;
         }
 
+        // One year range for the whole dashboard: the map's From/To and the Time Horizon
+        // (presets or From/To) are kept in sync, and every view follows them.
+        const YEAR_SELECTS = { map: ['mapYearFrom', 'mapYearTo'], chart: ['chartYearFrom', 'chartYearTo'] };
+        function presetKeys(preset) {
+            const ks = yearKeys(), last = k => parseInt(lastYearOf(k));
+            if (preset === 'early') return ks.filter(k => last(k) <= 2012);
+            if (preset === 'recent') return ks.filter(k => last(k) >= 2013);
+            return ks;
+        }
+
         function initYearRange() {
             const ks = yearKeys();
             const opts = ks.map(k => `<option value="${k}">${k.includes('-') ? firstYearOf(k) + '–' + lastYearOf(k).slice(2) : k}</option>`).join('');
-            document.getElementById('mapYearFrom').innerHTML = opts;
-            document.getElementById('mapYearTo').innerHTML = opts;
+            Object.values(YEAR_SELECTS).flat().forEach(id => { document.getElementById(id).innerHTML = opts; });
             yearFrom = ks[0]; yearTo = ks[ks.length - 1];
-            document.getElementById('mapYearFrom').value = yearFrom;
-            document.getElementById('mapYearTo').value = yearTo;
+            syncYearControls();
         }
 
-        function updateYearRange(changed) {
+        // Put the current range into every year control, and show the matching preset (or "Custom")
+        function syncYearControls() {
+            Object.values(YEAR_SELECTS).forEach(([f, t]) => {
+                document.getElementById(f).value = yearFrom;
+                document.getElementById(t).value = yearTo;
+            });
+            const match = ['full', 'early', 'recent'].find(p => {
+                const ks = presetKeys(p);
+                return ks[0] === yearFrom && ks[ks.length - 1] === yearTo;
+            });
+            document.getElementById('timeframeSelect').value = match || 'custom';
+        }
+
+        function onYearSelect(where, changed) {
             const ks = yearKeys();
-            const f = document.getElementById('mapYearFrom'), t = document.getElementById('mapYearTo');
+            const [fId, tId] = YEAR_SELECTS[where];
+            let from = document.getElementById(fId).value, to = document.getElementById(tId).value;
             // keep From <= To: move the other end when they cross
-            if (ks.indexOf(f.value) > ks.indexOf(t.value)) {
-                if (changed === 'from') t.value = f.value; else f.value = t.value;
+            if (ks.indexOf(from) > ks.indexOf(to)) {
+                if (changed === 'from') to = from; else from = to;
             }
-            yearFrom = f.value; yearTo = t.value;
+            setYearRange(from, to);
+        }
+
+        function applyTimeframePreset() {
+            const preset = document.getElementById('timeframeSelect').value;
+            if (preset === 'custom') { document.getElementById('chartYearFrom').focus(); return; }
+            const ks = presetKeys(preset);
+            setYearRange(ks[0], ks[ks.length - 1]);
+        }
+
+        function setYearRange(from, to) {
+            yearFrom = from; yearTo = to;
+            syncYearControls();
             buildStateMap();
             recolorMap();
             populateStateTable();
             refreshSelectedState();
             updateMapSubtitle();
+            updateAllCharts();
         }
 
         function updateMapSubtitle() {
@@ -706,23 +757,30 @@
         }
 
         // ---------- start-up ----------
-        window.onload = function () {
+        window.onload = async function () {
             // Icons are decorative: never let a failed icon load stop the dashboard
             try { if (window.lucide) lucide.createIcons(); } catch (e) { console.warn("Icons unavailable:", e); }
-            if (!DATA) {
-                document.getElementById('us-map-container').innerText = 'Data file data/iat_data.js could not be loaded.';
+            if (!dataIsCurrent(DATA)) {
+                const fresh = await loadFreshData();
+                if (dataIsCurrent(fresh)) DATA = fresh;
+            }
+            if (!dataIsCurrent(DATA)) {
+                document.getElementById('us-map-container').innerText =
+                    'The data file (data/iat_data.js) could not be loaded. Please reload the page in a minute.';
                 return;
             }
-            initYearRange();
-            fillSummaryText();
-            buildStateMap();
-            renderLegend();
-            updateMapSubtitle();
-            initMap();
-            initCharts();
-            populateStateTable();
-            selectState('DC', false);
-            showNationalDistribution();  // the distribution chart starts with the whole US
+            // Start each part separately, so a problem in one can't blank the whole dashboard
+            const step = (name, fn) => { try { fn(); } catch (e) { console.error(`Dashboard: ${name} failed to start`, e); } };
+            step('year range', initYearRange);
+            step('summary text', fillSummaryText);
+            step('map data', () => { buildStateMap(); renderLegend(); updateMapSubtitle(); });
+            step('map', initMap);
+            step('charts', initCharts);
+            step('state table', populateStateTable);
+            step('state card', () => {
+                selectState('DC', false);
+                showNationalDistribution();  // the distribution chart starts with the whole US
+            });
         };
 
         // Headline figures and sentences, computed from the data
@@ -1031,7 +1089,7 @@
             const trendCtx = document.getElementById('trendChart').getContext('2d');
             trendChart = new Chart(trendCtx, {
                 type: 'line',
-                data: getTrendChartData('all', 'full'),
+                data: getTrendChartData('all'),
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1060,7 +1118,7 @@
             educationChart = new Chart(document.getElementById('educationChart').getContext('2d'), {
                 type: 'bar', data: { labels: [], datasets: [] }, options: barOptions('edu')
             });
-            updateGroupCharts('all', 'full');
+            updateGroupCharts('all');
             updateDistributionChart();
         }
 
@@ -1118,18 +1176,10 @@
             updateDistributionChart();
         }
 
-        function yearsFor(time) {
-            const last = k => parseInt(k.slice(-4));
-            let keys = yearKeys();
-            if (time === 'early') keys = keys.filter(k => last(k) <= 2012);
-            if (time === 'recent') keys = keys.filter(k => last(k) >= 2013);
-            return keys;
-        }
-
         // Mean D-score by age group or education level: US respondents in the chosen
-        // group, pooled over the years in the chosen time horizon (weighted by respondents)
-        function groupMeans(kind, demo, time) {
-            const keys = yearsFor(time);
+        // group, pooled over the selected years (weighted by respondents)
+        function groupMeans(kind, demo) {
+            const keys = rangeKeys();
             const totals = {};
             const used = [];  // years that actually have this breakdown (2002–03 has no usable education data)
             keys.forEach(k => {
@@ -1147,25 +1197,28 @@
                 labels: groups.map(([g]) => g.replace('-', '–')),
                 means: groups.map(([, t]) => t.sum / t.n),
                 counts: groups.map(([, t]) => t.n),
-                span: used.length ? `${yearLabel(used[0])} to ${yearLabel(used[used.length - 1])}` : ''
+                span: !used.length ? '' : used.length === 1 ? yearLabel(used[0])
+                    : `${yearLabel(used[0])} to ${yearLabel(used[used.length - 1])}`
             };
         }
 
-        function updateGroupCharts(demo, time) {
+        function updateGroupCharts(demo) {
             [['age', demographicChart, '#1e293b', 'age-subtitle'], ['edu', educationChart, '#2563eb', 'edu-subtitle']]
                 .forEach(([kind, chart, color, subId]) => {
-                    const g = groupMeans(kind, demo, time);
+                    const g = groupMeans(kind, demo);
                     chart.data = { labels: g.labels, datasets: [{ label: 'Mean D-score', data: g.means, backgroundColor: color, borderRadius: 6 }] };
                     chart.$counts = g.counts;
                     chart.update();
                     const total = g.counts.reduce((a, b) => a + b, 0);
                     document.getElementById(subId).innerText =
-                        `${COHORT_LABEL[demo]}, US · ${g.span} · ${fmtInt(total)} respondents · follows Demographic Group and Time Horizon`;
+                        g.labels.length
+                            ? `${COHORT_LABEL[demo]}, US · ${g.span} · ${fmtInt(total)} respondents · follows Demographic Group and the selected years`
+                            : `${COHORT_LABEL[demo]}, US · no data for ${rangeLabel()}`;
                 });
         }
 
-        function getTrendChartData(demo, time) {
-            const keys = yearsFor(time);
+        function getTrendChartData(demo) {
+            const keys = rangeKeys();
             const pick = (k, f) => ((DATA.us_by_year[k] || {})[demo] || {})[f] ?? null;
             return {
                 labels: keys.map(yearLabel),
@@ -1191,16 +1244,17 @@
         }
 
         function updateAllCharts() {
+            if (!trendChart) return;
             const demo = document.getElementById('demographicSelect').value;
-            const timeframe = document.getElementById('timeframeSelect').value;
 
             updateDistributionChart();
-            updateGroupCharts(demo, timeframe);
-            trendChart.data = getTrendChartData(demo, timeframe);
+            updateGroupCharts(demo);
+            trendChart.data = getTrendChartData(demo);
             trendChart.update();
 
-            const keys = getTrendChartData(demo, timeframe).labels;
-            document.getElementById('trend-title').innerText = `Longitudinal Trend (${keys[0]} to ${keys[keys.length - 1]})`;
+            const keys = trendChart.data.labels;
+            document.getElementById('trend-title').innerText = keys.length > 1
+                ? `Longitudinal Trend (${keys[0]} to ${keys[keys.length - 1]})` : `Longitudinal Trend (${keys[0]})`;
         }
 
         function toggleDistributionView(type) {
