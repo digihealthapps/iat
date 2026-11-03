@@ -103,22 +103,22 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <p class="text-xs text-slate-500 font-medium">Avg Implicit Bias Drop</p>
-                        <p class="text-2xl font-bold text-emerald-600 mt-1">-32.5%</p>
+                        <p class="text-2xl font-bold text-emerald-600 mt-1">-32.6%</p>
                         <p class="text-[11px] text-slate-400 mt-0.5">2007 vs 2025 aggregate</p>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <p class="text-xs text-slate-500 font-medium">Avg Explicit Bias Drop</p>
-                        <p class="text-2xl font-bold text-emerald-600 mt-1">-55.7%</p>
+                        <p class="text-2xl font-bold text-emerald-600 mt-1">-55.8%</p>
                         <p class="text-[11px] text-slate-400 mt-0.5">Self-reported preference</p>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <p class="text-xs text-slate-500 font-medium">Pro-White Bias Share</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1">~64%</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1">~82%</p>
                         <p class="text-[11px] text-slate-400 mt-0.5">Slight to strong preference</p>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <p class="text-xs text-slate-500 font-medium">Mean D-Score Range</p>
-                        <p class="text-2xl font-bold text-slate-900 mt-1">0.26 – 0.44</p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">0.26 – 0.45</p>
                         <p class="text-[11px] text-slate-400 mt-0.5">Moderate pro-White baseline</p>
                     </div>
                 </div>
@@ -134,7 +134,7 @@
                         Nationwide & State-Level Implicit Race Bias Distribution
                     </h2>
                     <p class="text-xs text-slate-500 mt-1">
-                        Color-coded state metrics derived from Project Implicit aggregate data across ~2.8M+ US respondents.
+                        Color-coded state metrics derived from Project Implicit aggregate data across ~2.9M US respondents.
                     </p>
                 </div>
 
@@ -181,14 +181,14 @@
                     <div class="mt-4 pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs space-y-2 sm:space-y-0">
                         <span id="map-legend-title" class="font-semibold text-slate-700">Implicit Bias Intensity (D-Score Spectrum):</span>
                         <div id="map-legend-bar" class="flex items-center space-x-1">
-                            <span id="legend-min-label" class="text-[11px] text-slate-500 mr-1">Lower (~0.25)</span>
-                            <div class="w-6 h-3 bg-[#fef0d9] rounded-sm" title="0.25 - 0.30"></div>
+                            <span id="legend-min-label" class="text-[11px] text-slate-500 mr-1">&lt; 0.30</span>
+                            <div class="w-6 h-3 bg-[#fef0d9] rounded-sm" title="Below 0.30"></div>
                             <div class="w-6 h-3 bg-[#fdd49e] rounded-sm" title="0.30 - 0.34"></div>
                             <div class="w-6 h-3 bg-[#fdbb84] rounded-sm" title="0.34 - 0.38"></div>
                             <div class="w-6 h-3 bg-[#fc8d59] rounded-sm" title="0.38 - 0.42"></div>
                             <div class="w-6 h-3 bg-[#e34a33] rounded-sm" title="0.42 - 0.45"></div>
                             <div class="w-6 h-3 bg-[#b30000] rounded-sm" title="0.45+"></div>
-                            <span id="legend-max-label" class="text-[11px] text-slate-500 ml-1">Higher (~0.48)</span>
+                            <span id="legend-max-label" class="text-[11px] text-slate-500 ml-1">≥ 0.45</span>
                         </div>
                     </div>
                 </div>
@@ -298,7 +298,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Implicit Bias Score Distribution</h3>
-                            <p class="text-xs text-slate-500">Breakdown of D-Score levels among respondents</p>
+                            <p class="text-xs text-slate-500">Share of respondents (%) at each D-Score level · follows Demographic Group, not Time Horizon</p>
                         </div>
                         <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
                             <button onclick="toggleDistributionView('pie')" id="distPieBtn" class="px-2 py-1 text-xs font-medium rounded bg-white text-slate-800 shadow-sm">Doughnut</button>
@@ -314,7 +314,7 @@
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
-                            <h3 class="text-base font-bold text-slate-900">Longitudinal Trend (2007–2025)</h3>
+                            <h3 id="trend-title" class="text-base font-bold text-slate-900">Longitudinal Trend (2007–2025)</h3>
                             <p class="text-xs text-slate-500">Comparison of Implicit (D-Score) vs. Explicit Self-reported Bias</p>
                         </div>
                     </div>
@@ -328,7 +328,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Implicit Bias by Age Cohort</h3>
-                            <p class="text-xs text-slate-500">Average D-Score across age groups</p>
+                            <p class="text-xs text-slate-500">Average D-Score across age groups · all participants (not affected by filters)</p>
                         </div>
                     </div>
                     <div class="h-64 relative">
@@ -341,7 +341,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Implicit Bias by Education Level</h3>
-                            <p class="text-xs text-slate-500">Average D-Score across highest degree obtained</p>
+                            <p class="text-xs text-slate-500">Average D-Score across highest degree obtained · all participants (not affected by filters)</p>
                         </div>
                     </div>
                     <div class="h-64 relative">
@@ -364,7 +364,7 @@
                 <div class="w-8 h-8 rounded-lg bg-blue-100 text-brand-700 flex items-center justify-center font-bold text-sm">2</div>
                 <h3 class="text-base font-bold text-slate-900">Explicit vs. Implicit Divergence</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    Explicit self-reports show a much faster decline (-55.7%) compared to implicit measurement (-32.5%), highlighting differences between conscious attitude expression and automatic associations.
+                    Explicit self-reports show a much faster decline (-55.8%) compared to implicit measurement (-32.6%), highlighting differences between conscious attitude expression and automatic associations.
                 </p>
             </div>
             <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-2">
@@ -389,10 +389,11 @@
                         The <strong>D-score</strong> is the standard metric derived from response latencies in millisecond pairings. It ranges roughly from -2.0 to +2.0:
                     </p>
                     <ul class="list-disc pl-5 space-y-1 text-slate-600">
-                        <li><strong>D > 0.35:</strong> Moderate-to-strong automatic preference for European American vs. African American.</li>
+                        <li><strong>D > 0.65:</strong> Strong automatic preference for European American vs. African American.</li>
+                        <li><strong>0.35 < D ≤ 0.65:</strong> Moderate automatic preference for European American.</li>
                         <li><strong>0.15 < D ≤ 0.35:</strong> Slight automatic preference for European American.</li>
                         <li><strong>-0.15 ≤ D ≤ 0.15:</strong> Little to no automatic preference (Neutral).</li>
-                        <li><strong>D < -0.15:</strong> Automatic preference for African American.</li>
+                        <li><strong>D < -0.15:</strong> Automatic preference for African American (slight, moderate and strong use the same cut-offs).</li>
                     </ul>
                 </div>
                 <div class="space-y-2">
@@ -519,6 +520,7 @@
             initMap();
             initCharts();
             populateStateTable();
+            selectState(stateMapDataMap.get("11"), false); // District of Columbia
         };
 
         // Initialize US SVG Map
@@ -618,43 +620,40 @@
             const btnR = document.getElementById("mapModeReactionBtn");
             const legendTitle = document.getElementById("map-legend-title");
             const tableHeader = document.getElementById("table-metric-header");
-            const cardTitle = document.getElementById("card-metric-title");
 
             if (mode === 'dscore') {
                 btnD.className = "px-2.5 py-1 text-xs font-semibold rounded bg-white text-slate-800 shadow-sm border border-slate-200 transition";
                 btnR.className = "px-2.5 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition";
                 legendTitle.innerText = "Implicit Bias Intensity (D-Score Spectrum):";
                 tableHeader.innerText = "D-Score";
-                cardTitle.innerText = "Mean D-Score";
 
                 // Standard Crimson Heatmap Legend
                 document.getElementById("map-legend-bar").innerHTML = `
-                    <span class="text-[11px] text-slate-500 mr-1">Lower (~0.25)</span>
-                    <div class="w-6 h-3 bg-[#fef0d9] rounded-sm" title="0.25 - 0.30"></div>
+                    <span class="text-[11px] text-slate-500 mr-1">&lt; 0.30</span>
+                    <div class="w-6 h-3 bg-[#fef0d9] rounded-sm" title="Below 0.30"></div>
                     <div class="w-6 h-3 bg-[#fdd49e] rounded-sm" title="0.30 - 0.34"></div>
                     <div class="w-6 h-3 bg-[#fdbb84] rounded-sm" title="0.34 - 0.38"></div>
                     <div class="w-6 h-3 bg-[#fc8d59] rounded-sm" title="0.38 - 0.42"></div>
                     <div class="w-6 h-3 bg-[#e34a33] rounded-sm" title="0.42 - 0.45"></div>
                     <div class="w-6 h-3 bg-[#b30000] rounded-sm" title="0.45+"></div>
-                    <span class="text-[11px] text-slate-500 ml-1">Higher (~0.48)</span>
+                    <span class="text-[11px] text-slate-500 ml-1">≥ 0.45</span>
                 `;
             } else {
                 btnR.className = "px-2.5 py-1 text-xs font-semibold rounded bg-white text-slate-800 shadow-sm border border-slate-200 transition";
                 btnD.className = "px-2.5 py-1 text-xs font-semibold rounded text-slate-500 hover:text-slate-800 transition";
                 legendTitle.innerText = "How Much Faster Respondents Are at Associating White with Good (vs. Black with Good):";
                 tableHeader.innerText = "Faster at Associating…";
-                cardTitle.innerText = "Reaction Time Gap";
 
                 // Blue Latency Speed Legend
                 document.getElementById("map-legend-bar").innerHTML = `
-                    <span class="text-[11px] text-slate-500 mr-1">Slightly faster (~50ms)</span>
+                    <span class="text-[11px] text-slate-500 mr-1">&lt; 60 ms</span>
                     <div class="w-6 h-3 bg-[#eff3ff] rounded-sm" title="Under 60ms faster at associating White with good"></div>
                     <div class="w-6 h-3 bg-[#c6dbef] rounded-sm" title="60 - 80ms faster at associating White with good"></div>
                     <div class="w-6 h-3 bg-[#9ecae1] rounded-sm" title="80 - 100ms faster at associating White with good"></div>
                     <div class="w-6 h-3 bg-[#6baed6] rounded-sm" title="100 - 115ms faster at associating White with good"></div>
                     <div class="w-6 h-3 bg-[#3182bd] rounded-sm" title="115 - 125ms faster at associating White with good"></div>
                     <div class="w-6 h-3 bg-[#08519c] rounded-sm" title="Over 125ms faster at associating White with good"></div>
-                    <span class="text-[11px] text-slate-500 ml-1">Much faster (~135ms+)</span>
+                    <span class="text-[11px] text-slate-500 ml-1">≥ 125 ms</span>
                 `;
             }
 
@@ -738,11 +737,13 @@
         }
 
         function getBiasCategory(dscore) {
-            if (dscore >= 0.42) return "Strong Automatic Pro-White";
-            if (dscore >= 0.35) return "Moderate Automatic Pro-White";
-            if (dscore >= 0.28) return "Slight Automatic Pro-White";
-            if (dscore >= -0.15) return "Neutral / No Preference";
-            return "Automatic Pro-Black Preference";
+            // Standard IAT cut-offs (see Methodology): 0.15 / 0.35 / 0.65
+            const mag = Math.abs(dscore);
+            if (mag <= 0.15) return "Neutral / No Preference";
+            const group = dscore > 0 ? "Pro-White" : "Pro-Black";
+            if (mag > 0.65) return `Strong Automatic ${group}`;
+            if (mag > 0.35) return `Moderate Automatic ${group}`;
+            return `Slight Automatic ${group}`;
         }
 
         // Plain-language description of the reaction-time gap (sign-aware)
@@ -778,6 +779,11 @@
             refreshSelectedState();
         }
 
+        // Value the map is currently colouring by (D-score or White-vs-Black speed gap)
+        function metricValue(s) {
+            return activeMapMetric === 'dscore' ? s.dscore : s.bGoodSpeed - s.wGoodSpeed;
+        }
+
         function refreshSelectedState() {
             const sData = selectedStateId && stateMapDataMap.get(selectedStateId);
             if (sData) selectState(sData, false);
@@ -788,11 +794,8 @@
             const latencyDiff = sData.bGoodSpeed - sData.wGoodSpeed;
             document.getElementById("selected-state-name").innerText = `${sData.name} (${sData.code})`;
             
-            if (activeMapMetric === 'dscore') {
-                document.getElementById("selected-state-dscore").innerText = sData.dscore.toFixed(3);
-            } else {
-                document.getElementById("selected-state-dscore").innerText = `${Math.abs(latencyDiff)} ms`;
-            }
+            // The card always shows both metrics side by side
+            document.getElementById("selected-state-dscore").innerText = sData.dscore.toFixed(3);
 
             document.getElementById("selected-state-latency").innerText = `${Math.abs(latencyDiff)} ms`;
             document.getElementById("selected-state-latency-label").innerText = latencyDiff < 0
@@ -802,9 +805,9 @@
             document.getElementById("selected-state-bgood-speed").innerText = `${sData.bGoodSpeed} ms`;
             document.getElementById("selected-state-cat-val").innerText = getBiasCategory(sData.dscore);
 
-            const sorted = [...stateDataRaw].sort((a, b) => a.dscore - b.dscore);
+            const sorted = [...stateMapDataMap.values()].sort((a, b) => metricValue(a) - metricValue(b));
             const rank = sorted.findIndex(s => s.code === sData.code) + 1;
-            document.getElementById("selected-state-rank").innerText = `Rank #${rank} of 51`;
+            document.getElementById("selected-state-rank").innerText = `Rank #${rank} of ${sorted.length} (1 = lowest)`;
 
             document.querySelectorAll(".state-row").forEach(row => row.classList.remove("bg-slate-100", "font-bold"));
             const activeRow = document.getElementById(`row-${sData.code}`);
@@ -818,16 +821,10 @@
             const tbody = document.getElementById("state-table-body");
             tbody.innerHTML = "";
 
-            const sorted = [...stateDataRaw].sort((a, b) => {
-                if (activeMapMetric === 'dscore') {
-                    return a.dscore - b.dscore;
-                } else {
-                    return (a.bGoodSpeed - a.wGoodSpeed) - (b.bGoodSpeed - b.wGoodSpeed);
-                }
-            });
+            const sorted = [...stateMapDataMap.values()].sort((a, b) => metricValue(a) - metricValue(b));
 
             sorted.forEach(s => {
-                const sMap = stateMapDataMap.get(s.id) || s;
+                const sMap = s;
                 const tr = document.createElement("tr");
                 tr.id = `row-${s.code}`;
                 tr.className = "state-row hover:bg-slate-50 cursor-pointer transition";
@@ -843,6 +840,7 @@
                 `;
                 tbody.appendChild(tr);
             });
+            filterStateTable();
         }
 
         function filterStateTable() {
@@ -860,13 +858,7 @@
             distributionChart = new Chart(distCtx, {
                 type: 'doughnut',
                 data: getDistributionChartData('all'),
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
-                    }
-                }
+                options: distributionOptions('pie')
             });
 
             // Chart 2: Longitudinal Trend
@@ -878,7 +870,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { title: { display: true, text: 'Score Normalized (0 - 1.0)', font: { size: 11 } } }
+                        y: { title: { display: true, text: 'Mean score', font: { size: 11 } } }
                     },
                     plugins: {
                         legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
@@ -927,6 +919,19 @@
                     plugins: { legend: { display: false } }
                 }
             });
+        }
+
+        function distributionOptions(type) {
+            const pct = ctx => `${ctx.label}: ${ctx.raw}%`;
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: type === 'pie', position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: pct } }
+                },
+                scales: type === 'pie' ? {} : { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+            };
         }
 
         function getDistributionChartData(demo) {
@@ -989,6 +994,9 @@
 
             trendChart.data = getTrendChartData(demo, timeframe);
             trendChart.update();
+
+            const span = { full: '2007–2025', recent: '2019–2025', early: '2007–2015' }[timeframe];
+            document.getElementById('trend-title').innerText = `Longitudinal Trend (${span})`;
         }
 
         function toggleDistributionView(type) {
@@ -1012,13 +1020,7 @@
             distributionChart = new Chart(distCtx, {
                 type: type === 'pie' ? 'doughnut' : 'bar',
                 data: configData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: type === 'pie', position: 'right' }
-                    }
-                }
+                options: distributionOptions(type)
             });
         }
     </script>
