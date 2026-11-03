@@ -230,6 +230,11 @@ def main():
             k = int(max(lab)) if lab else None
             if k in (5, 7) and "african" in lab.get(1.0, "") and "european" in lab.get(float(k), ""):
                 explicit.append((c, k))
+            elif not lab and c in ("att7", "att_7"):
+                # 2015 and 2017 files carry this item without value labels; it is the same
+                # 7-point question as in the labelled years on either side.
+                explicit.append((c, 7))
+                print(f"  Explicit: {c} has no value labels; using the 7-point coding of other years")
             else:
                 print(f"  Explicit: skipping {c} (unexpected labels: {all_labels.get(c)})")
         print("  Explicit preference: " + (", ".join(f"{c} ({k}-point)" for c, k in explicit) or "not found"))
