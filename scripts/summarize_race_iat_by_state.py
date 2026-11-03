@@ -14,7 +14,8 @@ Output: state_cohort_iat.json in the current folder. For each state (plus a
 "US" total) and each cohort (all, black, white) it records the respondent
 count, mean and SD of the D-score, a low-sample flag, how many respondents
 fall in each D-score band (strong/moderate/slight pro-White, neutral,
-slight/moderate/strong pro-Black), where the file has block latencies the
+slight/moderate/strong pro-Black), for the US total the mean D-score by age
+group and by education level, where the file has block latencies the
 average response time in the White+good and Black+good blocks, and the mean
 self-reported preference ("explicit_pref") rescaled to -1 (strongly prefer
 African Americans) .. 0 (no preference) .. +1 (strongly prefer European
@@ -60,6 +61,15 @@ ORDER_COL = "Order"
 # prefer African Americans (1) to strongly prefer European Americans (5 or 7).
 # 2002-2006 use a 5-point version (att_5); later years a 7-point one (att_7, att7).
 EXPLICIT_COLS = ["att7", "att_7", "att_5"]
+
+# National breakdowns by age and education (US totals only).
+# Age: "age" where recorded (2002-2015), otherwise session year minus birth year.
+AGE_GROUPS = [(18, 24, "18-24"), (25, 34, "25-34"), (35, 44, "35-44"),
+              (45, 54, "45-54"), (55, 64, "55-64"), (65, 99, "65+")]
+# Education: edu_14 (same 14 codes in every year).
+EDU_GROUPS = {"High school or less": [1, 2, 3, 4], "Some college / associate": [5, 6],
+              "Bachelor's": [7], "Master's / other graduate": [8, 9, 13, 14],
+              "Ph.D. / J.D. / M.D.": [10, 11, 12]}
 RT_RANGE = (200, 10_000)  # ms; block means outside this are treated as invalid
 CHUNK = 200_000
 
@@ -164,6 +174,8 @@ def main():
     rt_acc = defaultdict(lambda: [0, 0.0, 0.0])
     # explicit preference per (state, cohort): n, sum of rescaled answers
     exp_acc = defaultdict(lambda: [0, 0.0])
+    # US totals per (cohort, "age"/"edu", group): n, sum of D
+    grp_acc = defaultdict(lambda: [0, 0.0])
     report = []
 
     for path in a.files:
@@ -222,6 +234,10 @@ def main():
         else:
             print("  Response times: block latency columns not found; skipping")
 
+        age_cols = [c for c in ("age", "birthyear", "year") if c in cols]
+        edu_col = "edu_14" if "edu_14" in cols else None
+        print(f"  Age: {', '.join(age_cols) or 'not found'}   Education: {edu_col or 'not found'}")
+
         explicit = []  # (column, number of scale points)
         for c in EXPLICIT_COLS:
             if c not in cols:
@@ -243,7 +259,7 @@ def main():
         # blocks have one (OSF readme). session_status is not used, because its codes
         # change between years (2025 marks nearly every session "R", not "C").
         usecols = ([d_col, st_col] + race_cols + (RT_COLS + [ORDER_COL] if has_rt else [])
-                   + [c for c, _ in explicit])
+                   + [c for c, _ in explicit] + age_cols + ([edu_col] if edu_col else []))
         # Per Order code: how often "later blocks slower" agrees with D > 0, and
         # per (state, cohort, order): n, sum of early-block ms, sum of late-block ms.
         order_votes = defaultdict(lambda: [0, 0])
@@ -280,6 +296,21 @@ def main():
                 done |= rows
             # race groups are "that race only, not Hispanic"
             is_white, is_black, is_asian = is_white & ~is_hisp, is_black & ~is_hisp, is_asian & ~is_hisp
+            age = pd.Series(np.nan, index=df.index)
+            if "age" in df:
+                age = pd.to_numeric(df["age"], errors="coerce")
+            if "birthyear" in df and "year" in df:
+                age = age.fillna(pd.to_numeric(df["year"], errors="coerce")
+                                 - pd.to_numeric(df["birthyear"], errors="coerce"))
+            age_grp = pd.Series(None, index=df.index, dtype=object)
+            for lo, hi, label in AGE_GROUPS:
+                age_grp[(age >= lo) & (age <= hi)] = label
+            edu_grp = pd.Series(None, index=df.index, dtype=object)
+            if edu_col:
+                edu = pd.to_numeric(df[edu_col], errors="coerce")
+                for label, codes in EDU_GROUPS.items():
+                    edu_grp[edu.isin(codes)] = label
+
             expl = pd.Series(np.nan, index=df.index)
             for c, k in explicit:  # first column answered wins
                 mid = (k + 1) / 2
@@ -307,6 +338,11 @@ def main():
                 for s, n, sm, sq in zip(g.size().index, g.size(), g.sum(), (g.apply(lambda x: (x ** 2).sum()))):
                     cell = acc[(s, cohort)]
                     cell[0] += int(n); cell[1] += float(sm); cell[2] += float(sq)
+                for kind, grp in (("age", age_grp), ("edu", edu_grp)):
+                    gg = pd.DataFrame({"g": grp[mask], "d": d[mask]}).dropna().groupby("g")["d"]
+                    for gname, n, sm in zip(gg.size().index, gg.size(), gg.sum()):
+                        cell = grp_acc[(cohort, kind, gname)]
+                        cell[0] += int(n); cell[1] += float(sm)
                 if explicit:
                     eg = pd.DataFrame({"s": st[mask], "e": expl[mask]}).dropna().groupby("s")["e"]
                     for s, n, sm in zip(eg.size().index, eg.size(), eg.sum()):
@@ -370,6 +406,11 @@ def main():
         out["states"].setdefault(s, {})[cohort] = {
             "n": n, "mean_d": round(mean, 4), "sd": round(sd, 4), "low_n": n < a.min_n,
             "band_counts": band_acc[(s, cohort)]}
+        if s == "US":
+            for kind, groups in (("age", [g for _, _, g in AGE_GROUPS]), ("edu", list(EDU_GROUPS))):
+                vals = {g: grp_acc[(cohort, kind, g)] for g in groups}
+                out["states"][s][cohort][f"{kind}_groups"] = {
+                    g: {"n": n, "mean_d": round(sm / n, 4) if n else None} for g, (n, sm) in vals.items()}
         en, esum = exp_acc.get((s, cohort), (0, 0))
         if en:
             out["states"][s][cohort].update({"n_explicit": en, "explicit_pref": round(esum / en, 4)})

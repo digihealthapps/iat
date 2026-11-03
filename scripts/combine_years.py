@@ -9,8 +9,9 @@ Each input file name must contain its year (e.g. y2019.json, y2002-2003.json;
 a range counts as its last year). The output has:
   - "states": the same per-state / per-cohort fields as the yearly files,
     pooled over the chosen years (every session weighted equally);
-  - "us_by_year": national respondent count, mean D-score and mean explicit
-    preference per year and cohort.
+  - "us_by_year": national respondent count, mean D-score, mean explicit
+    preference, and mean D-score by age group and education level, per year
+    and cohort.
 """
 import argparse
 import json
@@ -57,7 +58,8 @@ def main():
         y = year_of(path)
         data = json.load(open(path))
         cells = data["states"]
-        us_by_year[year_label(path)] = {c: {k: v[k] for k in ("n", "mean_d", "n_explicit", "explicit_pref") if k in v}
+        us_by_year[year_label(path)] = {c: {k: v[k] for k in ("n", "mean_d", "n_explicit", "explicit_pref",
+                                                             "age_groups", "edu_groups") if k in v}
                               for c, v in cells.get("US", {}).items()}
         if not (a.start <= y <= a.end):
             continue
