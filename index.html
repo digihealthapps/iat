@@ -425,7 +425,19 @@
 
     <!-- JavaScript Data Logic & Visualizations -->
     <script>
-        const DATA = window.IAT_DATA;
+        let DATA = window.IAT_DATA;
+        // The page needs the per-year data added in Nov 2026. A browser or GitHub's cache can
+        // briefly pair this page with an older data file; if so, fetch a fresh copy.
+        const dataIsCurrent = d => !!(d && d.states_by_year && d.year_fields && d.us_by_year && d.bands);
+        function loadFreshData() {
+            return new Promise(resolve => {
+                const el = document.createElement('script');
+                el.src = 'data/iat_data.js?fresh=' + Date.now();
+                el.onload = () => resolve(window.IAT_DATA);
+                el.onerror = () => resolve(null);
+                document.head.appendChild(el);
+            });
+        }
 
         // FIPS id, postal code and name for the 50 states + DC (map shapes are keyed by FIPS id)
         const STATE_META = [
@@ -706,23 +718,30 @@
         }
 
         // ---------- start-up ----------
-        window.onload = function () {
+        window.onload = async function () {
             // Icons are decorative: never let a failed icon load stop the dashboard
             try { if (window.lucide) lucide.createIcons(); } catch (e) { console.warn("Icons unavailable:", e); }
-            if (!DATA) {
-                document.getElementById('us-map-container').innerText = 'Data file data/iat_data.js could not be loaded.';
+            if (!dataIsCurrent(DATA)) {
+                const fresh = await loadFreshData();
+                if (dataIsCurrent(fresh)) DATA = fresh;
+            }
+            if (!dataIsCurrent(DATA)) {
+                document.getElementById('us-map-container').innerText =
+                    'The data file (data/iat_data.js) could not be loaded. Please reload the page in a minute.';
                 return;
             }
-            initYearRange();
-            fillSummaryText();
-            buildStateMap();
-            renderLegend();
-            updateMapSubtitle();
-            initMap();
-            initCharts();
-            populateStateTable();
-            selectState('DC', false);
-            showNationalDistribution();  // the distribution chart starts with the whole US
+            // Start each part separately, so a problem in one can't blank the whole dashboard
+            const step = (name, fn) => { try { fn(); } catch (e) { console.error(`Dashboard: ${name} failed to start`, e); } };
+            step('year range', initYearRange);
+            step('summary text', fillSummaryText);
+            step('map data', () => { buildStateMap(); renderLegend(); updateMapSubtitle(); });
+            step('map', initMap);
+            step('charts', initCharts);
+            step('state table', populateStateTable);
+            step('state card', () => {
+                selectState('DC', false);
+                showNationalDistribution();  // the distribution chart starts with the whole US
+            });
         };
 
         // Headline figures and sentences, computed from the data
