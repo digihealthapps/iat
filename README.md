@@ -27,7 +27,7 @@ Use Python 3.10 or later: the 2023 and 2024 `.sav` files need pyreadstat 1.3 or 
 - **D-score:** positive means faster at associating White with good. Bands use the standard 0.15 / 0.35 / 0.65 cut-offs.
 - **Response times:** mean latency of blocks 3 & 4 and blocks 6 & 7, matched to White+good / Black+good using the `Order` column. Each Order code's meaning is checked against the D-score rather than assumed; block means outside 200–10,000 ms are skipped.
 - **Explicit preference:** the "Which statement best describes you?" item, rescaled to −1 (strongly prefer African Americans) … 0 … +1 (strongly prefer European Americans). 2002–2006 asked a 5-point version, later years a 7-point one.
-- **Map:** all years pooled, so years with more sessions weigh more. Groups with fewer than 100 respondents in a state are marked as low sample.
+- **Map:** the selected years (all by default) are pooled from per-year state values, so years with more sessions weigh more. Colours use a 7-step scale fitted to the selected group, years and measure (diverging around zero when states fall on both sides); low-sample states don't stretch the scale. Groups with fewer than 100 respondents in a state are marked as low sample.
 - **Age and education (national charts):** age is the recorded age (2002–2015) or session year minus birth year (2016 on); under-18s are left out. Education is the 14-level `edu_14` question (2004 on; the 2002–2003 file only has a 9-level version whose top code is unlabelled, so it is left out), grouped into high school or less, some college / associate, bachelor's, master's / other graduate (incl. MBA), and Ph.D. / J.D. / M.D. Both charts pool the years in the selected time horizon for the selected group.
 
 ## Source
