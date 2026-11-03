@@ -20,6 +20,7 @@ Raw OSF files are not stored in this repository (they exceed GitHub's file size 
 
 - Positive D-scores mean respondents were faster at associating White with good; negative D-scores mean they were faster at associating Black with good.
 - The "White Respondents Only" and "Black Respondents Only" map views are currently scaled from each state's overall average. They will be replaced with measured per-state values from `state_cohort_iat.json`.
+- The Implicit Bias Score Distribution chart currently shows fixed national figures that don't match the trend chart. `state_cohort_iat.json` also records how many respondents fall in each D-score band, per state and for the US as a whole, so the chart can show measured, state-specific breakdowns.
 
 ## Source
 
