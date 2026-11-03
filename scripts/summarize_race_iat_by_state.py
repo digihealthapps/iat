@@ -235,8 +235,10 @@ def main():
             print("  Response times: block latency columns not found; skipping")
 
         age_cols = [c for c in ("age", "birthyear", "year") if c in cols]
-        edu_col = "edu_14" if "edu_14" in cols else None
-        print(f"  Age: {', '.join(age_cols) or 'not found'}   Education: {edu_col or 'not found'}")
+        # edu_14 in every year from 2004; part of 2015-2016 records it only as
+        # "edunotstudent" (same 14 codes), used where edu_14 is blank.
+        edu_cols = [c for c in ("edu_14", "edunotstudent") if c in cols]
+        print(f"  Age: {', '.join(age_cols) or 'not found'}   Education: {', '.join(edu_cols) or 'not found'}")
 
         explicit = []  # (column, number of scale points)
         for c in EXPLICIT_COLS:
@@ -259,7 +261,7 @@ def main():
         # blocks have one (OSF readme). session_status is not used, because its codes
         # change between years (2025 marks nearly every session "R", not "C").
         usecols = ([d_col, st_col] + race_cols + (RT_COLS + [ORDER_COL] if has_rt else [])
-                   + [c for c, _ in explicit] + age_cols + ([edu_col] if edu_col else []))
+                   + [c for c, _ in explicit] + age_cols + edu_cols)
         # Per Order code: how often "later blocks slower" agrees with D > 0, and
         # per (state, cohort, order): n, sum of early-block ms, sum of late-block ms.
         order_votes = defaultdict(lambda: [0, 0])
@@ -306,8 +308,10 @@ def main():
             for lo, hi, label in AGE_GROUPS:
                 age_grp[(age >= lo) & (age <= hi)] = label
             edu_grp = pd.Series(None, index=df.index, dtype=object)
-            if edu_col:
-                edu = pd.to_numeric(df[edu_col], errors="coerce")
+            if edu_cols:
+                edu = pd.Series(np.nan, index=df.index)
+                for c in edu_cols:
+                    edu = edu.fillna(pd.to_numeric(df[c], errors="coerce"))
                 for label, codes in EDU_GROUPS.items():
                     edu_grp[edu.isin(codes)] = label
 

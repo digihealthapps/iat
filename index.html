@@ -1020,7 +1020,7 @@
                     chart.update();
                     const total = g.counts.reduce((a, b) => a + b, 0);
                     document.getElementById(subId).innerText =
-                        `US ${COHORT_LABEL[demo].toLowerCase()} · ${g.span} · ${fmtInt(total)} respondents · follows Demographic Group and Time Horizon`;
+                        `${COHORT_LABEL[demo]}, US · ${g.span} · ${fmtInt(total)} respondents · follows Demographic Group and Time Horizon`;
                 });
         }
 
