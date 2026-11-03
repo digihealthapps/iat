@@ -5,26 +5,30 @@ An interactive dashboard of Race Implicit Association Test (IAT) results in the 
 ## What's here
 
 - `index.html` — the dashboard. Open it in a browser; no build step needed.
-- `scripts/summarize_race_iat_by_state.py` — summarizes the OSF Race IAT files by state and respondent race (all, Black, White) into a small `state_cohort_iat.json`.
+- `data/iat_data.js` (and the same data as `data/state_cohort_iat.json`) — measured values from every public Race IAT file on OSF, 2002–2003 through 2025: per state and for the US as a whole, for all respondents and for White, Black, Asian and Hispanic/Latino respondents, plus national values per year.
+- `scripts/summarize_race_iat_by_state.py` — summarizes one or more OSF Race IAT files (`.sav` or `.csv`) by state and respondent group.
+- `scripts/combine_years.py` — pools the yearly summaries into the dashboard's data file.
 
-## Running the summary script
+## Rebuilding the data
 
 ```bash
 pip install pandas pyreadstat
-python scripts/summarize_race_iat_by_state.py path/to/Race.IAT.2024.sav
+python scripts/summarize_race_iat_by_state.py Race_IAT.public.2024.sav --out y2024.json
+# ...one file per year, then:
+python scripts/combine_years.py y*.json --out data/state_cohort_iat.json --js data/iat_data.js
 ```
 
-On Python 3.9, install `pyreadstat==1.2.8`: newer versions need Python 3.10 or later.
+Use Python 3.10 or later: the 2023 and 2024 `.sav` files need pyreadstat 1.3 or newer, which doesn't support Python 3.9. Raw OSF files are not stored in this repository (they exceed GitHub's file size limits). Download them from Project Implicit's OSF page.
 
-The script reads both race formats: the single-answer question in older files (`raceomb_002`) and the tick boxes in newer ones (`raceomb_003_white`, `raceomb_003_black`, …). With tick boxes, "White" and "Black" mean that was the only race selected. In older files, where Hispanic ethnicity is a separate question (`ethnicityomb`), Hispanic respondents are left out of the White and Black groups so the definition matches. Where a file has block latencies (`Mn_RT_all_3/4/6/7` and `Order`), the output also includes average White+good and Black+good response times.
+## How the numbers are computed
 
-Raw OSF files are not stored in this repository (they exceed GitHub's file size limits). Download them from Project Implicit's OSF page.
-
-## Notes on the data
-
-- Positive D-scores mean respondents were faster at associating White with good; negative D-scores mean they were faster at associating Black with good.
-- The "White Respondents Only" and "Black Respondents Only" map views are currently scaled from each state's overall average. They will be replaced with measured per-state values from `state_cohort_iat.json`.
-- The Implicit Bias Score Distribution chart currently shows fixed national figures that don't match the trend chart. `state_cohort_iat.json` also records how many respondents fall in each D-score band, per state and for the US as a whole, so the chart can show measured, state-specific breakdowns.
+- **Sessions:** a session counts when it has a D-score (only participants who completed the IAT blocks have one) and a US state. `session_status` is not used, because its codes change between years.
+- **Groups:** White, Black and Asian mean that race only and not Hispanic. Hispanic/Latino covers any race. The race question changes over the years (a combined race/ethnicity answer in 2002–2006, a single race answer plus a separate Hispanic question in 2007–2022, tick boxes from 2023, with switches part-way through 2006, 2016 and 2023); each respondent is classified by the question they answered. In 2002–2006, Asian includes Pacific Islander.
+- **D-score:** positive means faster at associating White with good. Bands use the standard 0.15 / 0.35 / 0.65 cut-offs.
+- **Response times:** mean latency of blocks 3 & 4 and blocks 6 & 7, matched to White+good / Black+good using the `Order` column. Each Order code's meaning is checked against the D-score rather than assumed; block means outside 200–10,000 ms are skipped.
+- **Explicit preference:** the "Which statement best describes you?" item, rescaled to −1 (strongly prefer African Americans) … 0 … +1 (strongly prefer European Americans). 2002–2006 asked a 5-point version, later years a 7-point one.
+- **Map:** all years pooled, so years with more sessions weigh more. Groups with fewer than 100 respondents in a state are marked as low sample.
+- **Not yet from the data:** the age and education charts show illustrative values.
 
 ## Source
 
