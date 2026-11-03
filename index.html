@@ -328,8 +328,8 @@
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
-                            <h3 class="text-base font-bold text-slate-900">Implicit Bias by Age Cohort</h3>
-                            <p class="text-xs text-amber-700">Illustrative values, not yet computed from the OSF data · not affected by filters</p>
+                            <h3 class="text-base font-bold text-slate-900">Implicit Bias by Age Group</h3>
+                            <p id="age-subtitle" class="text-xs text-slate-500"></p>
                         </div>
                     </div>
                     <div class="h-64 relative">
@@ -342,7 +342,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Implicit Bias by Education Level</h3>
-                            <p class="text-xs text-amber-700">Illustrative values, not yet computed from the OSF data · not affected by filters</p>
+                            <p id="edu-subtitle" class="text-xs text-slate-500"></p>
                         </div>
                     </div>
                     <div class="h-64 relative">
@@ -397,7 +397,7 @@
                         Data comes from self-selected web participants taking the Race IAT at Project Implicit. While non-randomized, research by Charlesworth & Banaji demonstrates that these demographic and temporal trends closely mirror probability-sampled national panels.
                     </p>
                     <p class="leading-relaxed">
-                        This dashboard uses every public Race IAT file on OSF from 2002–2003 to 2025. It counts US sessions that have a D-score and a state, and pools all years for the map, so years with more sessions weigh more. White, Black and Asian mean respondents who gave that race only and are not Hispanic. Hispanic/Latino covers any race. In 2002–2006, Asian includes Pacific Islander. Groups with fewer than 100 respondents in a state are marked as low sample.
+                        This dashboard uses every public Race IAT file on OSF from 2002–2003 to 2025. It counts US sessions that have a D-score and a state, and pools all years for the map, so years with more sessions weigh more. White, Black and Asian mean respondents who gave that race only and are not Hispanic. Hispanic/Latino covers any race. In 2002–2006, Asian includes Pacific Islander. Groups with fewer than 100 respondents in a state are marked as low sample. Age is the recorded age, or session year minus birth year from 2016 on (under-18s left out). Education is the highest level completed, from a 14-level question grouped into five levels.
                     </p>
                 </div>
             </div>
@@ -513,11 +513,6 @@
         let distributionChart, trendChart, demographicChart, educationChart;
         let currentDistView = 'pie';
 
-        // Age and education charts are not computed from the OSF data yet (illustrative values).
-        const illustrative = {
-            ageGroups: { labels: ['18–24', '25–34', '35–44', '45–54', '55–64', '65+'], values: [0.27, 0.30, 0.34, 0.38, 0.41, 0.44] },
-            education: { labels: ['High School or Less', 'Some College', 'Bachelor\'s Degree', 'Master\'s / Advanced', 'Ph.D. / Professional'], values: [0.40, 0.36, 0.32, 0.29, 0.26] }
-        };
 
         // ---------- data helpers ----------
         const fmtInt = n => n.toLocaleString('en-US');
@@ -910,22 +905,22 @@
                 }
             });
 
-            const barOptions = {
+            const barOptions = kind => ({
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: { y: { min: 0, max: 0.6 } },
-                plugins: { legend: { display: false } }
-            };
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Mean D-score', font: { size: 11 } } } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => `Mean D ${fmtSigned(ctx.raw, 3)} · ${fmtInt(ctx.chart.$counts[ctx.dataIndex])} respondents` } }
+                }
+            });
             demographicChart = new Chart(document.getElementById('demographicChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: illustrative.ageGroups.labels, datasets: [{ label: 'Mean D-Score (illustrative)', data: illustrative.ageGroups.values, backgroundColor: '#cbd5e1', borderRadius: 6 }] },
-                options: barOptions
+                type: 'bar', data: { labels: [], datasets: [] }, options: barOptions('age')
             });
             educationChart = new Chart(document.getElementById('educationChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: illustrative.education.labels, datasets: [{ label: 'Mean D-Score (illustrative)', data: illustrative.education.values, backgroundColor: '#cbd5e1', borderRadius: 6 }] },
-                options: barOptions
+                type: 'bar', data: { labels: [], datasets: [] }, options: barOptions('edu')
             });
+            updateGroupCharts('all', 'full');
             updateDistributionChart();
         }
 
@@ -983,11 +978,54 @@
             updateDistributionChart();
         }
 
-        function getTrendChartData(demo, time) {
-            let keys = yearKeys();
+        function yearsFor(time) {
             const last = k => parseInt(k.slice(-4));
+            let keys = yearKeys();
             if (time === 'early') keys = keys.filter(k => last(k) <= 2012);
             if (time === 'recent') keys = keys.filter(k => last(k) >= 2013);
+            return keys;
+        }
+
+        // Mean D-score by age group or education level: US respondents in the chosen
+        // group, pooled over the years in the chosen time horizon (weighted by respondents)
+        function groupMeans(kind, demo, time) {
+            const keys = yearsFor(time);
+            const totals = {};
+            const used = [];  // years that actually have this breakdown (2002–03 has no usable education data)
+            keys.forEach(k => {
+                const groups = (((DATA.us_by_year[k] || {})[demo] || {})[`${kind}_groups`]) || {};
+                if (Object.values(groups).some(v => v.n)) used.push(k);
+                Object.entries(groups).forEach(([g, v]) => {
+                    if (!v.n) return;
+                    totals[g] = totals[g] || { n: 0, sum: 0, order: Object.keys(groups).indexOf(g) };
+                    totals[g].n += v.n;
+                    totals[g].sum += v.mean_d * v.n;
+                });
+            });
+            const groups = Object.entries(totals).sort((a, b) => a[1].order - b[1].order);
+            return {
+                labels: groups.map(([g]) => g.replace('-', '–')),
+                means: groups.map(([, t]) => t.sum / t.n),
+                counts: groups.map(([, t]) => t.n),
+                span: used.length ? `${yearLabel(used[0])} to ${yearLabel(used[used.length - 1])}` : ''
+            };
+        }
+
+        function updateGroupCharts(demo, time) {
+            [['age', demographicChart, '#1e293b', 'age-subtitle'], ['edu', educationChart, '#2563eb', 'edu-subtitle']]
+                .forEach(([kind, chart, color, subId]) => {
+                    const g = groupMeans(kind, demo, time);
+                    chart.data = { labels: g.labels, datasets: [{ label: 'Mean D-score', data: g.means, backgroundColor: color, borderRadius: 6 }] };
+                    chart.$counts = g.counts;
+                    chart.update();
+                    const total = g.counts.reduce((a, b) => a + b, 0);
+                    document.getElementById(subId).innerText =
+                        `US ${COHORT_LABEL[demo].toLowerCase()} · ${g.span} · ${fmtInt(total)} respondents · follows Demographic Group and Time Horizon`;
+                });
+        }
+
+        function getTrendChartData(demo, time) {
+            const keys = yearsFor(time);
             const pick = (k, f) => ((DATA.us_by_year[k] || {})[demo] || {})[f] ?? null;
             return {
                 labels: keys.map(yearLabel),
@@ -1017,6 +1055,7 @@
             const timeframe = document.getElementById('timeframeSelect').value;
 
             updateDistributionChart();
+            updateGroupCharts(demo, timeframe);
             trendChart.data = getTrendChartData(demo, timeframe);
             trendChart.update();
 
