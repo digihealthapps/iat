@@ -176,44 +176,44 @@ def main():
         tick_mode = (not a.race_col and f"{RACE_TICK_PREFIX}white" in cols
                      and f"{RACE_TICK_PREFIX}black" in cols)
         print(f"\n{name}: D={d_col}  state={st_col}")
+        # Some years switch race question mid-year (2006: "ethnic" then "raceomb"; 2016:
+        # "raceomb" all year plus "raceomb_002" from September; 2023: "raceomb002" until
+        # March, then tick boxes). Each respondent is classified by the first of these
+        # they actually answered, tick boxes first.
+        race_cols = list(tick_cols) if tick_mode else []
         if tick_mode:
-            race_cols = tick_cols
             print(f"  Race: tick boxes ({', '.join(c[len(RACE_TICK_PREFIX):] for c in tick_cols)}); "
                   "a box counts as ticked when its value is 1")
             for c in (f"{RACE_TICK_PREFIX}white", f"{RACE_TICK_PREFIX}black",
                       f"{RACE_TICK_PREFIX}asian", f"{RACE_TICK_PREFIX}hispanic"):
                 if all_labels.get(c):
                     print(f"  Codes for {c}: {all_labels[c]}")
-        else:
-            # Some years switch race question mid-year (2006: "ethnic" then "raceomb";
-            # 2016: "raceomb" all year plus "raceomb_002" from September). Each respondent
-            # is classified by the first of these questions they actually answered.
-            race_names = [a.race_col] if a.race_col else [c for c in RACE_CANDIDATES if c in cols]
-            if not race_names:
-                pick(cols, RACE_CANDIDATES, None, "race")  # exits with the column list
-            # Hispanic (any race) from the separate ethnicity question, where it exists.
-            eth_col = "ethnicityomb" if "ethnicityomb" in cols else None
-            hisp = num(find_code(all_labels.get(eth_col, {}), "hispanic", None)) if eth_col else None
-            if hisp is None:
-                eth_col = None
-            schemes = []
-            for col in race_names:
-                labels = all_labels.get(col, {})
-                sch = {"col": col,
-                       "black": num(find_code(labels, "black", a.black_code)),
-                       "white": num(find_code(labels, "white", a.white_code)),
-                       "asian": [num(c) for c in find_codes(labels, "asian")],
-                       "hisp": num(find_code(labels, "hispanic", None))}  # 2002-2006 combined answer
-                print(f"  Race: {col}" + (f"  codes: {labels}" if labels else ""))
-                if sch["black"] is None or sch["white"] is None:
-                    sys.exit(f"  Couldn't tell which {col} codes mean Black and White. "
-                             "Re-run with --race-col, --black-code and --white-code.")
-                print(f"    Using Black = {sch['black']:g}, White = {sch['white']:g}, "
-                      f"Asian = {[f'{c:g}' for c in sch['asian']]}, Hispanic = "
-                      + (f"{sch['hisp']:g}" if sch["hisp"] is not None else
-                         f"{eth_col} = {hisp:g}" if eth_col else "not available"))
-                schemes.append(sch)
-            race_cols = race_names + ([eth_col] if eth_col else [])
+        race_names = [a.race_col] if a.race_col else [c for c in RACE_CANDIDATES if c in cols]
+        if not race_names and not tick_mode:
+            pick(cols, RACE_CANDIDATES, None, "race")  # exits with the column list
+        # Hispanic (any race) from the separate ethnicity question, where it exists.
+        eth_col = "ethnicityomb" if "ethnicityomb" in cols else None
+        hisp = num(find_code(all_labels.get(eth_col, {}), "hispanic", None)) if eth_col else None
+        if hisp is None:
+            eth_col = None
+        schemes = []
+        for col in race_names:
+            labels = all_labels.get(col, {})
+            sch = {"col": col,
+                   "black": num(find_code(labels, "black", a.black_code)),
+                   "white": num(find_code(labels, "white", a.white_code)),
+                   "asian": [num(c) for c in find_codes(labels, "asian")],
+                   "hisp": num(find_code(labels, "hispanic", None))}  # 2002-2006 combined answer
+            print(f"  Race: {col}" + (f"  codes: {labels}" if labels else ""))
+            if sch["black"] is None or sch["white"] is None:
+                sys.exit(f"  Couldn't tell which {col} codes mean Black and White. "
+                         "Re-run with --race-col, --black-code and --white-code.")
+            print(f"    Using Black = {sch['black']:g}, White = {sch['white']:g}, "
+                  f"Asian = {[f'{c:g}' for c in sch['asian']]}, Hispanic = "
+                  + (f"{sch['hisp']:g}" if sch["hisp"] is not None else
+                     f"{eth_col} = {hisp:g}" if eth_col else "not available"))
+            schemes.append(sch)
+        race_cols += race_names + ([eth_col] if eth_col else [])
 
         has_rt = all(c in cols for c in RT_COLS + [ORDER_COL])
         if has_rt:
@@ -257,29 +257,29 @@ def main():
             band = band_of(d)
             kept += len(d)
 
+            none = pd.Series(False, index=df.index)
+            is_white, is_black, is_asian, is_hisp = none.copy(), none.copy(), none.copy(), none.copy()
+            done = none.copy()
             if tick_mode:
-                ticked = {c: pd.to_numeric(df[c], errors="coerce") == 1 for c in race_cols}
+                ticked = {c: pd.to_numeric(df[c], errors="coerce") == 1 for c in tick_cols}
                 n_ticked = sum(ticked.values())
-                only = lambda r: ticked.get(f"{RACE_TICK_PREFIX}{r}", False) & (n_ticked == 1)
+                only = lambda r: ticked.get(f"{RACE_TICK_PREFIX}{r}", none) & (n_ticked == 1)
                 is_white, is_black, is_asian = only("white"), only("black"), only("asian")
-                is_hisp = ticked.get(f"{RACE_TICK_PREFIX}hispanic", pd.Series(False, index=df.index))
-            else:
-                none = pd.Series(False, index=df.index)
-                is_white, is_black, is_asian, is_hisp = none.copy(), none.copy(), none.copy(), none.copy()
-                if eth_col:
-                    is_hisp |= pd.to_numeric(df[eth_col], errors="coerce") == hisp
-                done = none.copy()
-                for sch in schemes:
-                    race = pd.to_numeric(df[sch["col"]], errors="coerce")
-                    rows = race.notna() & ~done
-                    is_white |= rows & (race == sch["white"])
-                    is_black |= rows & (race == sch["black"])
-                    is_asian |= rows & race.isin(sch["asian"])
-                    if sch["hisp"] is not None:
-                        is_hisp |= rows & (race == sch["hisp"])
-                    done |= rows
-                # race groups are "that race only, not Hispanic"
-                is_white, is_black, is_asian = is_white & ~is_hisp, is_black & ~is_hisp, is_asian & ~is_hisp
+                is_hisp = ticked.get(f"{RACE_TICK_PREFIX}hispanic", none).copy()
+                done = n_ticked > 0
+            if eth_col:
+                is_hisp |= ~done & (pd.to_numeric(df[eth_col], errors="coerce") == hisp)
+            for sch in schemes:
+                race = pd.to_numeric(df[sch["col"]], errors="coerce")
+                rows = race.notna() & ~done
+                is_white |= rows & (race == sch["white"])
+                is_black |= rows & (race == sch["black"])
+                is_asian |= rows & race.isin(sch["asian"])
+                if sch["hisp"] is not None:
+                    is_hisp |= rows & (race == sch["hisp"])
+                done |= rows
+            # race groups are "that race only, not Hispanic"
+            is_white, is_black, is_asian = is_white & ~is_hisp, is_black & ~is_hisp, is_asian & ~is_hisp
             expl = pd.Series(np.nan, index=df.index)
             for c, k in explicit:  # first column answered wins
                 mid = (k + 1) / 2
