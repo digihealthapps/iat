@@ -17,10 +17,17 @@ fall in each D-score band (strong/moderate/slight pro-White, neutral,
 slight/moderate/strong pro-Black) and, where the file has block latencies,
 the average response time in the White+good and Black+good blocks.
 
-Race: older files have a single-answer race question (raceomb_002). Newer
-files (e.g. 2025) have one tick-box column per race (raceomb_003_white, ...).
-With tick boxes, "white" means White was the only race selected, and
-"black" means Black was the only race selected.
+Cohorts: all, white, black, asian, hispanic.
+  - white / black / asian: that race only, and not Hispanic.
+  - hispanic: Hispanic or Latino, of any race.
+Race is recorded three ways across the years:
+  - 2002-2006 "ethnic": one combined answer ("White-Not of Hispanic Origin",
+    "Asian or Pacific Islander", "Hispanic", ...). Asian includes Pacific
+    Islander in these years.
+  - 2007-2022 "raceomb" / "raceomb_002" / "raceomb002": one race answer
+    (East Asian and South Asian both count as Asian), plus a separate
+    Hispanic question "ethnicityomb".
+  - 2023-2025 tick boxes, one per race including Hispanic (raceomb_003_white, ...).
 
 Response times: the test randomises whether White+good or Black+good comes
 first (column "Order"). Rather than assume what each Order code means, the
@@ -78,16 +85,25 @@ def pick(cols, candidates, override, what):
     sys.exit(f"Couldn't find a {what} column. Pass it with --{what}-col. Columns: {cols[:60]}")
 
 
-def find_code(labels, word, override):
-    if override is not None:
-        return override
-    # Skip multi-race answers and negations such as "Not Hispanic or Latino",
-    # but keep e.g. "White-Not of Hispanic Origin" (2002-2006 files).
+def find_codes(labels, word):
+    """All codes whose label names `word`, skipping multi-race answers and negations.
+
+    "Not Hispanic or Latino" is skipped; "White-Not of Hispanic Origin" (2002-2006)
+    still counts as White but not as Hispanic.
+    """
     skip = ("multi", "more than one", "mixed", "biracial")
     def wanted(v):
         v = str(v).lower().strip()
-        return word in v and not any(x in v for x in skip) and not v.startswith(("not ", "non"))
-    hits = [k for k, v in labels.items() if wanted(v)]
+        if word not in v or any(x in v for x in skip) or v.startswith(("not ", "non")):
+            return False
+        return not (word == "hispanic" and "not" in v)
+    return [k for k, v in labels.items() if wanted(v)]
+
+
+def find_code(labels, word, override):
+    if override is not None:
+        return override
+    hits = find_codes(labels, word)
     return hits[0] if len(hits) == 1 else None
 
 
@@ -145,7 +161,8 @@ def main():
             race_cols = tick_cols
             print(f"  Race: tick boxes ({', '.join(c[len(RACE_TICK_PREFIX):] for c in tick_cols)}); "
                   "a box counts as ticked when its value is 1")
-            for c in (f"{RACE_TICK_PREFIX}white", f"{RACE_TICK_PREFIX}black"):
+            for c in (f"{RACE_TICK_PREFIX}white", f"{RACE_TICK_PREFIX}black",
+                      f"{RACE_TICK_PREFIX}asian", f"{RACE_TICK_PREFIX}hispanic"):
                 if all_labels.get(c):
                     print(f"  Codes for {c}: {all_labels[c]}")
         else:
@@ -160,14 +177,18 @@ def main():
             labels = all_labels.get(race_col, {})
             black = find_code(labels, "black", a.black_code)
             white = find_code(labels, "white", a.white_code)
+            asian = find_codes(labels, "asian")
+            # Hispanic: from ethnicityomb where it exists, else from the combined 2002-2006 answer
+            hisp_in_race = find_code(labels, "hispanic", None) if not (eth_col and hisp is not None) else None
             print(f"  Race: {race_col}")
             if labels:
                 print("  Race codes in this file:", labels)
             if black is None or white is None:
                 sys.exit("  Couldn't tell which race codes mean Black and White. "
                          "Re-run with --black-code and --white-code using the codes listed above.")
-            print(f"  Using Black = {black}, White = {white}"
-                  + (f"; excluding {eth_col} = {hisp} (Hispanic) from both" if eth_col and hisp is not None else ""))
+            print(f"  Using Black = {black}, White = {white}, Asian = {asian}; Hispanic = "
+                  + (f"{eth_col} = {hisp} (excluded from the race groups)" if eth_col and hisp is not None
+                     else f"{race_col} = {hisp_in_race}" if hisp_in_race is not None else "not available"))
 
         has_rt = all(c in cols for c in RT_COLS + [ORDER_COL])
         if has_rt:
@@ -196,15 +217,21 @@ def main():
             if tick_mode:
                 ticked = {c: pd.to_numeric(df[c], errors="coerce") == 1 for c in race_cols}
                 n_ticked = sum(ticked.values())
-                is_white = ticked[f"{RACE_TICK_PREFIX}white"] & (n_ticked == 1)
-                is_black = ticked[f"{RACE_TICK_PREFIX}black"] & (n_ticked == 1)
+                only = lambda r: ticked.get(f"{RACE_TICK_PREFIX}{r}", False) & (n_ticked == 1)
+                is_white, is_black, is_asian = only("white"), only("black"), only("asian")
+                is_hisp = ticked.get(f"{RACE_TICK_PREFIX}hispanic", pd.Series(False, index=df.index))
             else:
                 race = pd.to_numeric(df[race_col], errors="coerce")
-                is_white, is_black = race == white, race == black
+                is_white, is_black, is_asian = race == white, race == black, race.isin(asian)
                 if eth_col and hisp is not None:
-                    not_hisp = pd.to_numeric(df[eth_col], errors="coerce") != hisp
-                    is_white, is_black = is_white & not_hisp, is_black & not_hisp
-            cohorts = (("all", pd.Series(True, index=d.index)), ("black", is_black), ("white", is_white))
+                    is_hisp = pd.to_numeric(df[eth_col], errors="coerce") == hisp
+                    is_white, is_black, is_asian = is_white & ~is_hisp, is_black & ~is_hisp, is_asian & ~is_hisp
+                elif hisp_in_race is not None:
+                    is_hisp = race == hisp_in_race
+                else:
+                    is_hisp = pd.Series(False, index=df.index)
+            cohorts = (("all", pd.Series(True, index=d.index)), ("black", is_black), ("white", is_white),
+                       ("asian", is_asian), ("hispanic", is_hisp))
 
             if has_rt:
                 rt = df[RT_COLS].apply(pd.to_numeric, errors="coerce")
@@ -235,9 +262,8 @@ def main():
 
         report.append((name, kept))
         print(f"  Kept {kept:,} US sessions with a state and a D-score")
-        if tick_mode:
-            print(f"  White only: {acc_total(acc, 'white'):,}  "
-                  f"Black only: {acc_total(acc, 'black'):,} (running totals)")
+        print("  Running totals: " + "  ".join(f"{c} {acc_total(acc, c):,}"
+                                               for c in ("white", "black", "asian", "hispanic")))
 
         if has_rt:
             # Decide, per Order code, whether blocks 3 & 4 were White+good.
