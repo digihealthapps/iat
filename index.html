@@ -149,6 +149,13 @@
                     </div>
 
                     <div class="flex items-center space-x-2">
+                        <label for="mapYearFrom" class="text-xs font-semibold text-slate-600">Years:</label>
+                        <select id="mapYearFrom" onchange="updateYearRange('from')" aria-label="From year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+                        <span class="text-xs text-slate-500">to</span>
+                        <select id="mapYearTo" onchange="updateYearRange('to')" aria-label="To year" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
                         <label for="mapCohortSelect" class="text-xs font-semibold text-slate-600">Cohort:</label>
                         <select id="mapCohortSelect" onchange="updateMapData()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900">
                             <option value="all">All Respondents (State Mean)</option>
@@ -183,7 +190,7 @@
                         <span id="map-legend-title" class="font-semibold text-slate-700">Implicit Bias Intensity (D-Score Spectrum):</span>
                         <div id="map-legend-bar" class="flex items-center space-x-1"></div>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-2">Faded: fewer than 100 respondents in that group (low sample). Grey: no respondents.</p>
+                    <p class="text-[11px] text-slate-500 mt-2">Colours are scaled to the selected group, years and measure, so they show differences between states. Exact values are in the table. Faded: fewer than 100 respondents (low sample), which don't stretch the scale. Grey: no respondents.</p>
                 </div>
 
                 <!-- Selected State Detail & Searchable State Rankings -->
@@ -295,7 +302,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Implicit Bias Score Distribution</h3>
-                            <p class="text-xs text-slate-500">Share of respondents (%) at each D-Score level · follows the selected state and Demographic Group</p>
+                            <p class="text-xs text-slate-500">Share of respondents (%) at each D-Score level · follows the selected state, the map's years and Demographic Group</p>
                             <p id="dist-subtitle" class="text-xs font-medium text-slate-700 mt-0.5"></p>
                         </div>
                         <div class="flex items-center gap-2">
@@ -397,7 +404,7 @@
                         Data comes from self-selected web participants taking the Race IAT at Project Implicit. While non-randomized, research by Charlesworth & Banaji demonstrates that these demographic and temporal trends closely mirror probability-sampled national panels.
                     </p>
                     <p class="leading-relaxed">
-                        This dashboard uses every public Race IAT file on OSF from 2002–2003 to 2025. It counts US sessions that have a D-score and a state, and pools all years for the map, so years with more sessions weigh more. White, Black and Asian mean respondents who gave that race only and are not Hispanic. Hispanic/Latino covers any race. In 2002–2006, Asian includes Pacific Islander. Groups with fewer than 100 respondents in a state are marked as low sample. Age is the recorded age, or session year minus birth year from 2016 on (under-18s left out). Education is the highest level completed, from a 14-level question grouped into five levels.
+                        This dashboard uses every public Race IAT file on OSF from 2002–2003 to 2025. It counts US sessions that have a D-score and a state, and pools the years chosen above the map (all years by default), so years with more sessions weigh more. White, Black and Asian mean respondents who gave that race only and are not Hispanic. Hispanic/Latino covers any race. In 2002–2006, Asian includes Pacific Islander. Groups with fewer than 100 respondents in a state are marked as low sample. Age is the recorded age, or session year minus birth year from 2016 on (under-18s left out). Education is the highest level completed, from a 14-level question grouped into five levels.
                     </p>
                 </div>
             </div>
@@ -488,21 +495,32 @@
             slight_black: '#a7f3d0', moderate_black: '#34d399', strong_black: '#047857'
         };
 
-        // One fixed colour scale per metric for every group, so groups can be compared.
-        const SCALES = {
+        // Colour scales are fitted to the selected group, years and metric (7 steps), so
+        // differences between states show. Values that cross zero use a diverging scale
+        // centred on zero (green = towards Black + good, pale yellow = about none, red/blue = towards White + good).
+        const PALETTES = {
             dscore: {
-                thresholds: [-0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35],
-                colors: ['#1a9850', '#91cf60', '#e5e7eb', '#fee8c8', '#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f', '#990000'],
-                fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2),
+                pos: ['#fee5d9', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#99000d'],
+                neg: ['#00441b', '#006d2c', '#238b45', '#41ab5d', '#74c476', '#a1d99b', '#c7e9c0'],
+                div: ['#1a9850', '#66bd63', '#a6d96a', '#ffffbf', '#fdae61', '#f46d43', '#d73027']
+            },
+            reaction: {
+                pos: ['#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c'],
+                neg: ['#00441b', '#006d2c', '#238b45', '#41ab5d', '#74c476', '#a1d99b', '#c7e9c0'],
+                div: ['#1a9850', '#66bd63', '#a6d96a', '#ffffbf', '#9ecae1', '#4292c6', '#08519c']
+            }
+        };
+        const METRIC_INFO = {
+            dscore: {
+                fmt: v => fmtSigned(v, 3), step: 0.001,
                 title: 'Mean D-score (positive = faster at associating White with good):'
             },
             reaction: {
-                thresholds: [-40, 0, 40, 80, 120, 160, 200],
-                colors: ['#1a9850', '#91cf60', '#e5e7eb', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-                fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' ms',
+                fmt: v => fmtSigned(v, 0) + ' ms', step: 1,
                 title: 'How much faster respondents associate White with good than Black with good:'
             }
         };
+        let currentScale = { thresholds: [], colors: ['#e5e7eb'], min: null, max: null };
         const NO_DATA_COLOR = '#cbd5e1';
 
         let activeMapMetric = 'dscore'; // 'dscore' or 'reaction'
@@ -512,6 +530,7 @@
         let stateMapDataMap = new Map(); // FIPS id -> state values for the map's group
         let distributionChart, trendChart, demographicChart, educationChart;
         let currentDistView = 'pie';
+        let yearFrom = null, yearTo = null;  // year keys of the map's year range
 
 
         // ---------- data helpers ----------
@@ -521,8 +540,92 @@
         const yearKeys = () => Object.keys(DATA.us_by_year).sort((a, b) => parseInt(a.slice(-4)) - parseInt(b.slice(-4)));
         const yearLabel = k => k.includes('-') ? `${k.slice(0, 4)}–${k.slice(-2)}` : k;
 
+        // ---------- year range ----------
+        const firstYearOf = k => k.slice(0, 4);
+        const lastYearOf = k => k.slice(-4);
+        function rangeKeys() {
+            const ks = yearKeys();
+            return ks.slice(ks.indexOf(yearFrom), ks.indexOf(yearTo) + 1);
+        }
+        function rangeLabel() {
+            const ks = rangeKeys();
+            const a = firstYearOf(ks[0]), z = lastYearOf(ks[ks.length - 1]);
+            return a === z ? a : `${a}–${z}`;
+        }
+
+        // Pool the per-year state values over the selected years (every session weighted equally)
+        const poolCache = new Map();
+        function pooledStates() {
+            const key = `${yearFrom}|${yearTo}`;
+            if (poolCache.has(key)) return poolCache.get(key);
+            const F = DATA.year_fields, idx = f => F.indexOf(f);
+            const iN = idx('n'), iD = idx('mean_d'), iNR = idx('n_rt'), iW = idx('rt_white_good_ms'),
+                  iB = idx('rt_black_good_ms'), iNE = idx('n_explicit'), iE = idx('explicit_pref');
+            const bandIdx = DATA.bands.map(b => idx('band:' + b));
+            const acc = {};
+            rangeKeys().forEach(k => {
+                Object.entries(DATA.states_by_year[k] || {}).forEach(([st, cohorts]) => {
+                    Object.entries(cohorts).forEach(([c, v]) => {
+                        const a = ((acc[st] = acc[st] || {})[c] = acc[st][c] ||
+                            { n: 0, d: 0, nr: 0, w: 0, b: 0, ne: 0, e: 0, bands: DATA.bands.map(() => 0) });
+                        a.n += v[iN]; a.d += v[iD] * v[iN];
+                        if (v[iNR]) { a.nr += v[iNR]; a.w += v[iW] * v[iNR]; a.b += v[iB] * v[iNR]; }
+                        if (v[iNE]) { a.ne += v[iNE]; a.e += v[iE] * v[iNE]; }
+                        bandIdx.forEach((bi, j) => { a.bands[j] += v[bi] || 0; });
+                    });
+                });
+            });
+            const out = {};
+            Object.entries(acc).forEach(([st, cohorts]) => {
+                out[st] = {};
+                Object.entries(cohorts).forEach(([c, a]) => {
+                    if (!a.n) return;
+                    out[st][c] = {
+                        n: a.n, mean_d: a.d / a.n, low_n: a.n < DATA.min_n,
+                        rt_white_good_ms: a.nr ? Math.round(a.w / a.nr) : null,
+                        rt_black_good_ms: a.nr ? Math.round(a.b / a.nr) : null,
+                        explicit_pref: a.ne ? a.e / a.ne : null,
+                        band_counts: Object.fromEntries(DATA.bands.map((b, j) => [b, a.bands[j]]))
+                    };
+                });
+            });
+            poolCache.set(key, out);
+            return out;
+        }
+
         function cellFor(code, cohort) {
-            return (DATA.states[code] || {})[cohort] || null;
+            return (pooledStates()[code] || {})[cohort] || null;
+        }
+
+        function initYearRange() {
+            const ks = yearKeys();
+            const opts = ks.map(k => `<option value="${k}">${k.includes('-') ? firstYearOf(k) + '–' + lastYearOf(k).slice(2) : k}</option>`).join('');
+            document.getElementById('mapYearFrom').innerHTML = opts;
+            document.getElementById('mapYearTo').innerHTML = opts;
+            yearFrom = ks[0]; yearTo = ks[ks.length - 1];
+            document.getElementById('mapYearFrom').value = yearFrom;
+            document.getElementById('mapYearTo').value = yearTo;
+        }
+
+        function updateYearRange(changed) {
+            const ks = yearKeys();
+            const f = document.getElementById('mapYearFrom'), t = document.getElementById('mapYearTo');
+            // keep From <= To: move the other end when they cross
+            if (ks.indexOf(f.value) > ks.indexOf(t.value)) {
+                if (changed === 'from') t.value = f.value; else f.value = t.value;
+            }
+            yearFrom = f.value; yearTo = t.value;
+            buildStateMap();
+            recolorMap();
+            populateStateTable();
+            refreshSelectedState();
+            updateMapSubtitle();
+        }
+
+        function updateMapSubtitle() {
+            const us = cellFor('US', 'all');
+            document.getElementById('map-subtitle').innerText =
+                `Mean values per state for ${rangeLabel()}, from Project Implicit's Race IAT data on OSF (${fmtInt(us.n)} US sessions).`;
         }
 
         function buildStateMap() {
@@ -534,6 +637,28 @@
                     wGoodSpeed: c.rt_white_good_ms, bGoodSpeed: c.rt_black_good_ms
                 } : { ...m, missing: true });
             });
+            computeScale();
+        }
+
+        // Fit a 7-step scale to the states shown (low-sample states don't stretch it)
+        function computeScale() {
+            const info = METRIC_INFO[activeMapMetric], pal = PALETTES[activeMapMetric];
+            const states = [...stateMapDataMap.values()].filter(s => metricValue(s) != null);
+            const solid = states.filter(s => !s.lowN);
+            const vals = (solid.length ? solid : states).map(metricValue);
+            if (!vals.length) { currentScale = { thresholds: [], colors: ['#e5e7eb'], min: null, max: null }; return; }
+            const min = Math.min(...vals), max = Math.max(...vals);
+            const round = v => Math.round(v / info.step) * info.step;
+            let thresholds, colors;
+            if (min < 0 && max > 0) {
+                const m = Math.max(-min, max);
+                thresholds = [-5, -3, -1, 1, 3, 5].map(k => round(k * m / 7));
+                colors = pal.div;
+            } else {
+                thresholds = [1, 2, 3, 4, 5, 6].map(i => round(min + i * (max - min) / 7));
+                colors = max <= 0 ? pal.neg : pal.pos;
+            }
+            currentScale = { thresholds, colors, min, max };
         }
 
         // Value the map is currently colouring by (D-score or White-vs-Black speed gap)
@@ -545,7 +670,7 @@
 
         function colorFor(value) {
             if (value == null) return NO_DATA_COLOR;
-            const sc = SCALES[activeMapMetric];
+            const sc = currentScale;
             let i = 0;
             while (i < sc.thresholds.length && value >= sc.thresholds[i]) i++;
             return sc.colors[i];
@@ -588,9 +713,11 @@
                 document.getElementById('us-map-container').innerText = 'Data file data/iat_data.js could not be loaded.';
                 return;
             }
+            initYearRange();
             fillSummaryText();
             buildStateMap();
             renderLegend();
+            updateMapSubtitle();
             initMap();
             initCharts();
             populateStateTable();
@@ -626,7 +753,6 @@
             set('card-prowhite-sub', `Slight to strong, all US respondents ${yearSpan()}`);
             set('card-range-value', `${fmtSigned(lo.c.mean_d)} – ${fmtSigned(hi.c.mean_d)}`);
             set('card-range-sub', `State means, all respondents (${lo.m.code} lowest, ${hi.m.code} highest)`);
-            set('map-subtitle', `Mean values per state, pooling every Project Implicit Race IAT file on OSF from ${yearSpan()} (${fmtInt(us.n)} US sessions).`);
             set('insight-1', `Among US respondents, the mean implicit D-score fell from ${fmtSigned(first.mean_d)} in ${firstLbl} to ${fmtSigned(last.mean_d)} in ${lastLbl} (${fmtSigned(implicitPct, 0)}%). It is still pro-White on average, but closer to neutral.`);
             set('insight-2', `Self-reported preference moved from ${fmtSigned(first.explicit_pref)} to ${fmtSigned(last.explicit_pref)} on a −1 to +1 scale, from a slight pro-White preference to roughly none, while implicit scores stayed clearly pro-White.`);
             set('insight-3', `State means for all respondents range from ${fmtSigned(lo.c.mean_d)} (${lo.m.name}) to ${fmtSigned(hi.c.mean_d)} (${hi.m.name}). Group differences are larger: White, Asian and Hispanic respondents average pro-White, Black respondents near neutral.`);
@@ -703,22 +829,32 @@
             d3.select("#map-tooltip").classed("hidden", true);
         }
 
+        // Dark text on light tiles, white text on dark tiles (fallback grid labels)
+        function labelColor(fill) {
+            const n = parseInt(fill.slice(1), 16);
+            const lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+            return lum < 140 ? '#ffffff' : '#1e293b';
+        }
+
         function recolorMap() {
+            hideTooltip();
+            renderLegend();
+            d3.selectAll(".state-label").attr("fill", d => labelColor(getMapFillColor(d.id)));
             d3.selectAll(".state-path").transition().duration(400)
                 .attr("fill", d => getMapFillColor(d.id))
                 .attr("fill-opacity", d => getMapOpacity(d.id));
         }
 
         function renderLegend() {
-            const sc = SCALES[activeMapMetric];
-            document.getElementById("map-legend-title").innerText = sc.title;
-            const t = sc.thresholds;
+            const info = METRIC_INFO[activeMapMetric], sc = currentScale, t = sc.thresholds;
+            document.getElementById("map-legend-title").innerText = info.title;
+            if (sc.min == null) { document.getElementById("map-legend-bar").innerHTML = '<span class="text-[11px] text-slate-500">No data</span>'; return; }
             const ranges = sc.colors.map((c, i) =>
-                i === 0 ? `below ${sc.fmt(t[0])}` : i === t.length ? `${sc.fmt(t[i - 1])} or more` : `${sc.fmt(t[i - 1])} to ${sc.fmt(t[i])}`);
+                i === 0 ? `below ${info.fmt(t[0])}` : i === t.length ? `${info.fmt(t[i - 1])} or more` : `${info.fmt(t[i - 1])} to ${info.fmt(t[i])}`);
             document.getElementById("map-legend-bar").innerHTML =
-                `<span class="text-[11px] text-slate-500 mr-1 whitespace-nowrap">&lt; ${sc.fmt(t[0])}</span>` +
+                `<span class="text-[11px] text-slate-500 mr-1 whitespace-nowrap">${info.fmt(sc.min)}</span>` +
                 sc.colors.map((c, i) => `<div class="w-5 h-3 rounded-sm" style="background:${c}" title="${ranges[i]}"></div>`).join('') +
-                `<span class="text-[11px] text-slate-500 ml-1 whitespace-nowrap">≥ ${sc.fmt(t[t.length - 1])}</span>`;
+                `<span class="text-[11px] text-slate-500 ml-1 whitespace-nowrap">${info.fmt(sc.max)}</span>`;
         }
 
         function toggleMapMetricMode(mode) {
@@ -728,7 +864,7 @@
             document.getElementById("mapModeDscoreBtn").className = mode === 'dscore' ? on : off;
             document.getElementById("mapModeReactionBtn").className = mode === 'dscore' ? off : on;
             document.getElementById("table-metric-header").innerText = mode === 'dscore' ? "D-Score" : "Faster at Associating…";
-            renderLegend();
+            computeScale();
             recolorMap();
             populateStateTable();
             refreshSelectedState();
@@ -756,6 +892,8 @@
             ];
 
             const cellSize = 65, startX = 60, startY = 20;
+            // 8 rows of tiles need more height than the map's 960x500 canvas
+            svg.attr("viewBox", `0 0 960 ${startY * 2 + 8 * (cellSize + 6)}`);
             const g = svg.append("g");
 
             gridLayout.forEach(item => {
@@ -783,12 +921,14 @@
                     .attr("stroke-width", "2px");
 
                 tile.append("text")
+                    .datum({ id: meta.id })
+                    .attr("class", "state-label")
                     .attr("x", x + cellSize / 2)
                     .attr("y", y + cellSize / 2 + 4)
                     .attr("text-anchor", "middle")
                     .attr("font-size", "13px")
                     .attr("font-weight", "bold")
-                    .attr("fill", "#1e293b")
+                    .attr("fill", labelColor(getMapFillColor(meta.id)))
                     .text(meta.code);
             });
         }
@@ -808,7 +948,7 @@
             const s = stateMapDataMap.get(meta.id);
             const set = (id, txt) => { document.getElementById(id).innerText = txt; };
             set("selected-state-name", `${meta.name} (${meta.code})`);
-            set("selected-state-group", `${COHORT_LABEL[mapCohort]} · ${yearSpan()}`);
+            set("selected-state-group", `${COHORT_LABEL[mapCohort]} · ${rangeLabel()}`);
 
             if (s.missing) {
                 ["selected-state-dscore", "selected-state-latency", "selected-state-wgood-speed",
@@ -967,7 +1107,7 @@
             distributionChart.data = getDistributionChartData();
             distributionChart.update();
             document.getElementById('dist-subtitle').innerText = cell
-                ? `${name} · ${COHORT_LABEL[demo]} · ${yearSpan()} · ${fmtInt(cell.n)} respondents`
+                ? `${name} · ${COHORT_LABEL[demo]} · ${rangeLabel()} · ${fmtInt(cell.n)} respondents`
                   + (cell.low_n ? ` (low sample)` : '')
                 : `${name} · ${COHORT_LABEL[demo]}: no respondents`;
             document.getElementById('distResetBtn').classList.toggle('hidden', !distCode);

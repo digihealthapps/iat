@@ -9,6 +9,8 @@ Each input file name must contain its year (e.g. y2019.json, y2002-2003.json;
 a range counts as its last year). The output has:
   - "states": the same per-state / per-cohort fields as the yearly files,
     pooled over the chosen years (every session weighted equally);
+  - "states_by_year": the per-state / per-cohort values for each year, as compact
+    arrays (see "year_fields"), so the dashboard can pool any range of years;
   - "us_by_year": national respondent count, mean D-score, mean explicit
     preference, and mean D-score by age group and education level, per year
     and cohort.
@@ -52,6 +54,10 @@ def main():
     pool = defaultdict(lambda: {"n": 0, "sum": 0.0, "sumsq": 0.0, "bands": defaultdict(int),
                                 "n_rt": 0, "w_sum": 0.0, "b_sum": 0.0, "n_exp": 0, "exp_sum": 0.0})
     us_by_year = {}
+    states_by_year = {}
+    # Compact per-year cell: counts and means; band counts follow in "bands" order.
+    year_fields = ["n", "mean_d", "sd", "n_rt", "rt_white_good_ms", "rt_black_good_ms",
+                   "n_explicit", "explicit_pref"]
     used, first_years, bands_order = [], [], None
 
     for path in sorted(a.files, key=year_of):
@@ -63,6 +69,11 @@ def main():
                               for c, v in cells.get("US", {}).items()}
         if not (a.start <= y <= a.end):
             continue
+        band_keys = data.get("bands") or []
+        states_by_year[year_label(path)] = {
+            s: {c: [v.get(f) for f in year_fields] + [v.get("band_counts", {}).get(b, 0) for b in band_keys]
+                for c, v in cohorts.items()}
+            for s, cohorts in cells.items()}
         used.append(y)
         first_years.append(years_in(path)[0])
         bands_order = data.get("bands", bands_order)
@@ -84,7 +95,9 @@ def main():
                     p["b_sum"] += v["rt_black_good_ms"] * v["n_rt"]
 
     out = {"years": [min(first_years), max(used)] if used else [], "years_included": used,
-           "min_n": a.min_n, "bands": bands_order, "states": {}, "us_by_year": us_by_year}
+           "min_n": a.min_n, "bands": bands_order, "states": {}, "us_by_year": us_by_year,
+           "year_fields": year_fields + [f"band:{b}" for b in (bands_order or [])],
+           "states_by_year": states_by_year}
     for (s, c), p in sorted(pool.items()):
         n = p["n"]
         mean = p["sum"] / n
