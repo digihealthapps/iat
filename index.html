@@ -90,7 +90,7 @@
                     </div>
                     <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Understanding Implicit Racial Preferences</h2>
                     <p class="text-slate-600 text-sm leading-relaxed">
-                        The Race Implicit Association Test (IAT) measures reaction-time differences when associating White vs. Black faces with positive or negative words and concepts. In Project Implicit's public data, US respondents' average implicit preference for White over Black changed from <strong id="ctx-implicit"></strong> between <span id="ctx-years"></span>, while their self-reported preference moved from <strong id="ctx-explicit"></strong>.
+                        <a href="https://implicit.harvard.edu/implicit/takeatest.html" target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-900 underline decoration-slate-400 underline-offset-2 hover:decoration-slate-900">The Race Implicit Association Test (IAT)</a> measures reaction-time differences when associating White vs. Black faces with positive or negative words and concepts. In Project Implicit's public data, US respondents' average implicit preference for White over Black changed from <strong id="ctx-implicit"></strong> between <span id="ctx-years"></span>, while their self-reported preference moved from <strong id="ctx-explicit"></strong>.
                     </p>
                     <div class="pt-2 flex flex-wrap gap-4 text-xs font-medium text-slate-500">
                         <div class="flex items-center"><i data-lucide="database" class="w-4 h-4 mr-1 text-slate-400"></i> <span id="stat-sessions"></span></div>
@@ -190,7 +190,7 @@
                         <span id="map-legend-title" class="font-semibold text-slate-700">Implicit Bias Intensity (D-Score Spectrum):</span>
                         <div id="map-legend-bar" class="flex items-center space-x-1"></div>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-2">Colours are scaled to the selected group, years and measure, so they show differences between states. Exact values are in the table. Faded: fewer than 100 respondents (low sample), which don't stretch the scale. Grey: no respondents.</p>
+                    <p class="text-[11px] text-slate-500 mt-2">Colors are scaled to the selected group, years and measure, so they show differences between states. Exact values are in the table. Faded: fewer than 100 respondents (low sample), which don't stretch the scale. Gray: no respondents.</p>
                 </div>
 
                 <!-- Selected State Detail & Searchable State Rankings -->
@@ -511,9 +511,9 @@
             slight_black: '#a7f3d0', moderate_black: '#34d399', strong_black: '#047857'
         };
 
-        // Colour scales are fitted to the selected group, years and metric (7 steps), so
+        // Color scales are fitted to the selected group, years and metric (7 steps), so
         // differences between states show. Values that cross zero use a diverging scale
-        // centred on zero (green = towards Black + good, pale yellow = about none, red/blue = towards White + good).
+        // centered on zero (green = toward Black + good, pale yellow = about none, red/blue = toward White + good).
         const PALETTES = {
             dscore: {
                 pos: ['#fee5d9', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#99000d'],
@@ -712,7 +712,7 @@
             currentScale = { thresholds, colors, min, max };
         }
 
-        // Value the map is currently colouring by (D-score or White-vs-Black speed gap)
+        // Value the map is currently coloring by (D-score or White-vs-Black speed gap)
         function metricValue(s) {
             if (!s || s.missing) return null;
             if (activeMapMetric === 'dscore') return s.dscore;
@@ -801,7 +801,7 @@
             set('ctx-years', `${firstLbl} and ${lastLbl}`);
             set('ctx-implicit', `${fmtSigned(first.mean_d)} to ${fmtSigned(last.mean_d)} (${fmtSigned(implicitPct, 0)}%)`);
             set('ctx-explicit', `${fmtSigned(first.explicit_pref)} to ${fmtSigned(last.explicit_pref)}`);
-            set('stat-sessions', `US sessions analysed: ${fmtInt(us.n)}`);
+            set('stat-sessions', `US sessions analyzed: ${fmtInt(us.n)}`);
             set('stat-trend', `Years: ${yearSpan()}`);
             set('card-implicit-value', `${fmtSigned(implicitPct, 0)}%`);
             set('card-implicit-sub', `Mean D ${fmtSigned(first.mean_d)} (${firstLbl}) → ${fmtSigned(last.mean_d)} (${lastLbl})`);
