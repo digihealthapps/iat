@@ -33,7 +33,7 @@ Race is recorded three ways across the years:
     Hispanic question "ethnicityomb".
   - 2023-2025 tick boxes, one per race including Hispanic (raceomb_003_white, ...).
 
-Response times: the test randomises whether White+good or Black+good comes
+Response times: the test randomizes whether White+good or Black+good comes
 first (column "Order"). Rather than assume what each Order code means, the
 script checks it against the D-score (positive D = faster at White+good) and
 prints how well each code agrees.
@@ -250,7 +250,7 @@ def main():
                 explicit.append((c, k))
             elif not lab and c in ("att7", "att_7"):
                 # 2015 and 2017 files carry this item without value labels; it is the same
-                # 7-point question as in the labelled years on either side.
+                # 7-point question as in the labeled years on either side.
                 explicit.append((c, 7))
                 print(f"  Explicit: {c} has no value labels; using the 7-point coding of other years")
             else:
