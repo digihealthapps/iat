@@ -180,7 +180,9 @@
                     <div id="map-tooltip" class="map-tooltip hidden absolute z-20 bg-slate-900 text-white p-3 rounded-lg shadow-lg text-xs space-y-1 max-w-xs pointer-events-none">
                         <p id="tooltip-state" class="font-bold text-sm text-white"></p>
                         <p class="text-slate-300" id="tooltip-metric-label">Mean D-Score: <span id="tooltip-dscore" class="font-semibold text-white"></span></p>
-                        <p class="text-slate-300">Category: <span id="tooltip-category" class="font-semibold text-amber-300"></span></p>
+                        <p class="text-slate-300">vs. US average: <span id="tooltip-vsus" class="font-semibold text-white"></span></p>
+                        <p class="text-slate-300">Rank: <span id="tooltip-rank" class="font-semibold text-white"></span></p>
+                        <p class="text-slate-300">IAT band of the average: <span id="tooltip-category" class="font-semibold text-amber-300"></span></p>
                         <p class="text-slate-400 text-[11px]" id="tooltip-association-row">Reaction time: <span id="tooltip-latency" class="text-emerald-300 font-semibold"></span></p>
                         <p class="text-slate-400 text-[11px]">Respondents: <span id="tooltip-n" class="text-white"></span></p>
                     </div>
@@ -227,8 +229,9 @@
                             </div>
                         </div>
                         <p id="selected-state-cat" class="text-xs text-slate-300 font-medium pt-0.5">
-                            Category: <span id="selected-state-cat-val" class="text-amber-300 font-semibold"></span>
+                            IAT band of the average: <span id="selected-state-cat-val" class="text-amber-300 font-semibold"></span>
                         </p>
+                        <p class="text-xs text-slate-300">vs. US average: <span id="selected-state-vsus" class="font-semibold text-white"></span></p>
                         <p class="text-xs text-slate-300">Self-reported preference (−1 to +1): <span id="selected-state-explicit" class="font-semibold text-white"></span></p>
                         <p id="selected-state-n" class="text-[11px] text-slate-400"></p>
                     </div>
@@ -401,6 +404,9 @@
                         <li><strong>-0.15 ≤ D ≤ 0.15:</strong> Little to no automatic preference (Neutral).</li>
                         <li><strong>D < -0.15:</strong> Automatic preference for African American (slight, moderate and strong use the same cut-offs).</li>
                     </ul>
+                    <p class="leading-relaxed">
+                        These bands describe individual scores. Averages over many people vary much less, so most state averages fall in the same band (usually "slight"). To compare states, use the exact score, the rank and the difference from the US average shown on the map.
+                    </p>
                 </div>
                 <div class="space-y-2">
                     <h4 class="font-bold text-slate-800 text-sm">Data Sample & Limitations</h4>
@@ -862,16 +868,46 @@
                 });
         }
 
+        // Where a state sits among the states with data, for the measure the map shows
+        function rankOf(code) {
+            const ranked = [...stateMapDataMap.values()].filter(x => metricValue(x) != null)
+                .sort((a, b) => metricValue(a) - metricValue(b));
+            const i = ranked.findIndex(x => x.code === code);
+            return i < 0 ? null : { rank: i + 1, total: ranked.length };
+        }
+        const rankText = code => { const r = rankOf(code); return r ? `#${r.rank} of ${r.total} (1 = lowest)` : '–'; };
+
+        // How a state compares with the US as a whole (same group and years), for the measure the map shows
+        function compareWithUS(s) {
+            const us = cellFor('US', mapCohort);
+            if (!us || s.missing) return '–';
+            if (activeMapMetric === 'dscore') {
+                // difference of the values as displayed (3 decimals), so the numbers add up on screen
+                const r3 = v => Math.round(v * 1000) / 1000;
+                const diff = r3(r3(s.dscore) - r3(us.mean_d));
+                if (diff === 0) return `same as the US (${fmtSigned(us.mean_d, 3)})`;
+                return `${Math.abs(diff).toFixed(3)} ${diff > 0 ? 'higher' : 'lower'} than the US (${fmtSigned(us.mean_d, 3)})`;
+            }
+            if (s.wGoodSpeed == null || us.rt_white_good_ms == null) return '–';
+            const usGap = us.rt_black_good_ms - us.rt_white_good_ms, diff = (s.bGoodSpeed - s.wGoodSpeed) - usGap;
+            if (diff === 0) return `same as the US (${fmtSigned(usGap, 0)} ms)`;
+            return `${Math.abs(diff)} ms ${diff > 0 ? 'more' : 'less'} toward White + good than the US (${fmtSigned(usGap, 0)} ms)`;
+        }
+
         function showTooltip(event, s) {
             if (!s) return;
             d3.select("#tooltip-state").text(`${s.name} (${s.code})`);
             if (s.missing) {
                 d3.select("#tooltip-dscore").text("no data for this group");
+                d3.select("#tooltip-vsus").text("–");
+                d3.select("#tooltip-rank").text("–");
                 d3.select("#tooltip-category").text("–");
                 d3.select("#tooltip-latency").text("–");
                 d3.select("#tooltip-n").text("0");
             } else {
                 d3.select("#tooltip-dscore").text(fmtSigned(s.dscore, 3));
+                d3.select("#tooltip-vsus").text(compareWithUS(s));
+                d3.select("#tooltip-rank").text(rankText(s.code));
                 d3.select("#tooltip-category").text(getBiasCategory(s.dscore));
                 d3.select("#tooltip-latency").text(s.wGoodSpeed != null ? describeSpeedGap(s.bGoodSpeed - s.wGoodSpeed) : "not available");
                 d3.select("#tooltip-n").text(fmtInt(s.n) + (s.lowN ? ` (fewer than ${DATA.min_n}: low sample)` : ""));
@@ -1010,7 +1046,7 @@
 
             if (s.missing) {
                 ["selected-state-dscore", "selected-state-latency", "selected-state-wgood-speed",
-                 "selected-state-bgood-speed", "selected-state-cat-val", "selected-state-explicit"].forEach(id => set(id, "–"));
+                 "selected-state-bgood-speed", "selected-state-cat-val", "selected-state-explicit", "selected-state-vsus"].forEach(id => set(id, "–"));
                 set("selected-state-n", "No respondents in this group");
                 set("selected-state-rank", "No data");
             } else {
@@ -1021,13 +1057,11 @@
                 set("selected-state-wgood-speed", s.wGoodSpeed != null ? `${s.wGoodSpeed} ms` : "–");
                 set("selected-state-bgood-speed", s.bGoodSpeed != null ? `${s.bGoodSpeed} ms` : "–");
                 set("selected-state-cat-val", getBiasCategory(s.dscore));
+                set("selected-state-vsus", compareWithUS(s));
                 set("selected-state-explicit", s.explicit != null ? fmtSigned(s.explicit) : "–");
                 set("selected-state-n", `${fmtInt(s.n)} respondents` + (s.lowN ? ` · low sample (fewer than ${DATA.min_n})` : ""));
 
-                const ranked = [...stateMapDataMap.values()].filter(x => metricValue(x) != null)
-                    .sort((a, b) => metricValue(a) - metricValue(b));
-                const rank = ranked.findIndex(x => x.code === code) + 1;
-                set("selected-state-rank", `Rank #${rank} of ${ranked.length} (1 = lowest)`);
+                set("selected-state-rank", `Rank ${rankText(code)}`);
             }
 
             document.querySelectorAll(".state-row").forEach(row => row.classList.remove("bg-slate-100", "font-bold"));
